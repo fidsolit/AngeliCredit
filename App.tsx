@@ -7,6 +7,7 @@ import { View } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import { ThemeProvider } from "@rneui/themed";
 import { theme } from "./lib/theme";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -58,18 +59,20 @@ export default function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <View style={{ flex: 1 }}>
-        {session && session.user ? (
-          isAdmin ? (
-            <AdminDashboard key={session.user.id} session={session} />
+    <SafeAreaProvider>
+      <ThemeProvider theme={theme}>
+        <View style={{ flex: 1 }}>
+          {session && session.user ? (
+            isAdmin ? (
+              <AdminDashboard key={session.user.id} session={session} />
+            ) : (
+              <Account key={session.user.id} session={session} />
+            )
           ) : (
-            <Account key={session.user.id} session={session} />
-          )
-        ) : (
-          <Auth navigation={undefined} />
-        )}
-      </View>
-    </ThemeProvider>
+            <Auth navigation={undefined} />
+          )}
+        </View>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

@@ -7,8 +7,8 @@ import {
   Easing,
   Image,
   ScrollView,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Input, Button, Text } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { z } from "zod";

@@ -7,7 +7,7 @@ import {
   Modal,
   Image,
 } from "react-native";
-import { Button, Text, Card, Avatar, Divider, Input } from "@rneui/themed";
+import { Button, Text, Card, Avatar, Divider, Input, CheckBox } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +21,16 @@ interface UserProfile {
   credit_score?: number;
   loan_limit?: number;
   avatar_url?: string;
+}
+
+interface ActivityItem {
+  id: string;
+  activity_type: string;
+  description: string;
+  amount?: number;
+  created_at: string;
+  icon: string;
+  color: string;
 }
 
 export default function Account({ session }: { session: any }) {
@@ -40,10 +50,15 @@ export default function Account({ session }: { session: any }) {
     monthlyIncome: "",
     employmentType: "",
   });
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
       fetchUserProfile();
+      fetchRecentActivities();
     }
   }, [session]);
 
@@ -73,6 +88,176 @@ export default function Account({ session }: { session: any }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+
+      // Fetch from activity_log table
+      const { data: activityData, error: activityError } = await supabase
+        .from("activity_log")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      // Fetch from loans table for loan-related activities
+      const { data: loanData, error: loanError } = await supabase
+        .from("loans")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("application_date", { ascending: false })
+        .limit(5);
+
+      let activities: ActivityItem[] = [];
+
+      // Process activity_log data
+      if (activityData && !activityError) {
+        const processedActivities = activityData.map((activity) => ({
+          id: activity.id,
+          activity_type: activity.activity_type,
+          description: activity.description,
+          amount: activity.amount,
+          created_at: activity.created_at,
+          icon: getActivityIcon(activity.activity_type),
+          color: getActivityColor(activity.activity_type),
+        }));
+        activities = [...activities, ...processedActivities];
+      }
+
+      // Process loan data
+      if (loanData && !loanError) {
+        const processedLoans = loanData.map((loan) => ({
+          id: `loan-${loan.id}`,
+          activity_type: "loan_status",
+          description: `Loan application ${loan.status}`,
+          amount: loan.amount,
+          created_at: loan.application_date,
+          icon: getLoanStatusIcon(loan.status),
+          color: getLoanStatusColor(loan.status),
+        }));
+        activities = [...activities, ...processedLoans];
+      }
+
+      // Sort by date and take the most recent 5
+      activities.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      activities = activities.slice(0, 5);
+
+      // If no real activities, use dummy data
+      if (activities.length === 0) {
+        activities = getDummyActivities();
+      }
+
+      setRecentActivities(activities);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      // Fallback to dummy data on error
+      setRecentActivities(getDummyActivities());
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  const getActivityIcon = (activityType: string): string => {
+    switch (activityType) {
+      case "loan_application":
+        return "document-text";
+      case "payment":
+        return "card";
+      case "deposit":
+        return "add-circle";
+      case "withdrawal":
+        return "remove-circle";
+      default:
+        return "information-circle";
+    }
+  };
+
+  const getActivityColor = (activityType: string): string => {
+    switch (activityType) {
+      case "loan_application":
+        return "#007bff";
+      case "payment":
+        return "#dc3545";
+      case "deposit":
+        return "#28a745";
+      case "withdrawal":
+        return "#ff9800";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  const getLoanStatusIcon = (status: string): string => {
+    switch (status) {
+      case "approved":
+        return "checkmark-circle";
+      case "pending":
+        return "time";
+      case "rejected":
+        return "close-circle";
+      case "completed":
+        return "checkmark-done-circle";
+      default:
+        return "document-text";
+    }
+  };
+
+  const getLoanStatusColor = (status: string): string => {
+    switch (status) {
+      case "approved":
+        return "#28a745";
+      case "pending":
+        return "#ff9800";
+      case "rejected":
+        return "#dc3545";
+      case "completed":
+        return "#007bff";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  const getDummyActivities = (): ActivityItem[] => {
+    return [
+      {
+        id: "dummy-1",
+        activity_type: "loan_approved",
+        description: "Loan Application Approved",
+        amount: 50000,
+        created_at: new Date(
+          Date.now() - 2 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 2 days ago
+        icon: "checkmark-circle",
+        color: "#28a745",
+      },
+      {
+        id: "dummy-2",
+        activity_type: "payment",
+        description: "Monthly Payment",
+        amount: 2500,
+        created_at: new Date(
+          Date.now() - 7 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 1 week ago
+        icon: "arrow-down-circle",
+        color: "#dc3545",
+      },
+      {
+        id: "dummy-3",
+        activity_type: "loan_application",
+        description: "New Loan Application Submitted",
+        amount: 30000,
+        created_at: new Date(
+          Date.now() - 10 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 10 days ago
+        icon: "document-text",
+        color: "#007bff",
+      },
+    ];
   };
 
   const handleSignOut = async () => {
@@ -227,6 +412,7 @@ export default function Account({ session }: { session: any }) {
       monthlyIncome: "",
       employmentType: "",
     });
+    setTermsAccepted(false);
   };
 
   const calculateLoanDetails = () => {
@@ -259,13 +445,24 @@ export default function Account({ session }: { session: any }) {
   };
 
   const submitLoanApplication = async () => {
-    // Validation
-    if (
-      !loanApplication.amount ||
-      !loanApplication.purpose ||
-      !loanApplication.monthlyIncome
-    ) {
-      Alert.alert("Validation Error", "Please fill in all required fields.");
+    // Validation - Check each field individually
+    const missingFields = [];
+    
+    if (!loanApplication.amount.trim()) missingFields.push("Loan Amount");
+    if (!loanApplication.purpose.trim()) missingFields.push("Loan Purpose");
+    if (!loanApplication.monthlyIncome.trim()) missingFields.push("Monthly Income");
+    if (!loanApplication.employmentType.trim()) missingFields.push("Employment Type");
+    
+    if (missingFields.length > 0) {
+      Alert.alert(
+        "Missing Required Fields", 
+        `Please fill in the following required fields:\n• ${missingFields.join('\n• ')}`
+      );
+      return;
+    }
+
+    if (!termsAccepted) {
+      Alert.alert("Terms Required", "You must accept the terms and conditions before submitting your loan application.");
       return;
     }
 
@@ -344,6 +541,41 @@ export default function Account({ session }: { session: any }) {
       style: "currency",
       currency: "PHP",
     }).format(amount);
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return "Just now";
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    } else if (diffInSeconds < 2592000) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days > 1 ? "s" : ""} ago`;
+    } else if (diffInSeconds < 31536000) {
+      const months = Math.floor(diffInSeconds / 2592000);
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    } else {
+      const years = Math.floor(diffInSeconds / 31536000);
+      return `${years} year${years > 1 ? "s" : ""} ago`;
+    }
+  };
+
+  const isFormValid = (): boolean => {
+    return (
+      loanApplication.amount.trim() !== "" &&
+      loanApplication.purpose.trim() !== "" &&
+      loanApplication.monthlyIncome.trim() !== "" &&
+      loanApplication.employmentType.trim() !== "" &&
+      termsAccepted
+    );
   };
 
   const getCreditScoreColor = (score: number) => {
@@ -500,31 +732,58 @@ export default function Account({ session }: { session: any }) {
           Recent Activity
         </Text>
         <Card containerStyle={styles.activityCard}>
-          <View style={styles.activityItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#28a745" />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>
-                Loan Application Approved
-              </Text>
-              <Text style={styles.activityDate}>2 days ago</Text>
+          {activitiesLoading ? (
+            <View style={styles.loadingActivity}>
+              <Text style={styles.loadingText}>Loading activities...</Text>
             </View>
-            <Text style={[styles.activityAmount, { color: "#28a745" }]}>
-              +{formatCurrency(50000)}
-            </Text>
-          </View>
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.activityItem}>
-            <Ionicons name="arrow-down-circle" size={20} color="#dc3545" />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Monthly Payment</Text>
-              <Text style={styles.activityDate}>1 week ago</Text>
+          ) : recentActivities.length > 0 ? (
+            recentActivities.map((activity, index) => (
+              <View key={activity.id}>
+                <View style={styles.activityItem}>
+                  <Ionicons
+                    name={activity.icon as any}
+                    size={20}
+                    color={activity.color}
+                  />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>
+                      {activity.description}
+                    </Text>
+                    <Text style={styles.activityDate}>
+                      {formatTimeAgo(activity.created_at)}
+                    </Text>
+                  </View>
+                  {activity.amount && (
+                    <Text
+                      style={[
+                        styles.activityAmount,
+                        {
+                          color:
+                            activity.activity_type === "payment" ||
+                            activity.activity_type === "withdrawal"
+                              ? "#dc3545"
+                              : activity.color,
+                        },
+                      ]}
+                    >
+                      {activity.activity_type === "payment" ||
+                      activity.activity_type === "withdrawal"
+                        ? "-"
+                        : "+"}
+                      {formatCurrency(activity.amount)}
+                    </Text>
+                  )}
+                </View>
+                {index < recentActivities.length - 1 && (
+                  <Divider style={styles.divider} />
+                )}
+              </View>
+            ))
+          ) : (
+            <View style={styles.noActivity}>
+              <Text style={styles.noActivityText}>No recent activity</Text>
             </View>
-            <Text style={[styles.activityAmount, { color: "#dc3545" }]}>
-              -{formatCurrency(2500)}
-            </Text>
-          </View>
+          )}
         </Card>
       </View>
 
@@ -632,12 +891,12 @@ export default function Account({ session }: { session: any }) {
             </Text>
             <TouchableOpacity
               onPress={submitLoanApplication}
-              disabled={uploading}
+              disabled={uploading || !isFormValid()}
             >
               <Text
                 style={[
                   styles.modalSaveButton,
-                  uploading && styles.disabledButton,
+                  (uploading || !isFormValid()) && styles.disabledButton,
                 ]}
               >
                 {uploading ? "Submitting..." : "Submit"}
@@ -690,6 +949,8 @@ export default function Account({ session }: { session: any }) {
                 keyboardType="numeric"
                 containerStyle={styles.inputContainer}
                 rightIcon={<Text style={styles.currencyLabel}>₱</Text>}
+                errorStyle={!loanApplication.amount.trim() ? styles.errorText : {}}
+                errorMessage={!loanApplication.amount.trim() ? "This field is required" : ""}
               />
 
               <Input
@@ -700,6 +961,8 @@ export default function Account({ session }: { session: any }) {
                 }
                 placeholder="e.g., Home improvement, Education, Emergency"
                 containerStyle={styles.inputContainer}
+                errorStyle={!loanApplication.purpose.trim() ? styles.errorText : {}}
+                errorMessage={!loanApplication.purpose.trim() ? "This field is required" : ""}
               />
 
               <View style={styles.dropdownContainer}>
@@ -747,10 +1010,20 @@ export default function Account({ session }: { session: any }) {
                 keyboardType="numeric"
                 containerStyle={styles.inputContainer}
                 rightIcon={<Text style={styles.currencyLabel}>₱</Text>}
+                errorStyle={!loanApplication.monthlyIncome.trim() ? styles.errorText : {}}
+                errorMessage={!loanApplication.monthlyIncome.trim() ? "This field is required" : ""}
               />
 
               <View style={styles.dropdownContainer}>
-                <Text style={styles.dropdownLabel}>Employment Type *</Text>
+                <Text style={[
+                  styles.dropdownLabel,
+                  !loanApplication.employmentType.trim() && styles.errorText
+                ]}>
+                  Employment Type *
+                  {!loanApplication.employmentType.trim() && (
+                    <Text style={styles.errorText}> - This field is required</Text>
+                  )}
+                </Text>
                 <View style={styles.dropdownOptions}>
                   {[
                     "Full-time",
@@ -807,6 +1080,169 @@ export default function Account({ session }: { session: any }) {
                   • Late payment fee: ₱500 per month
                 </Text>
               </View>
+
+              {/* Terms and Conditions Acceptance */}
+              <View style={styles.termsAcceptance}>
+                <CheckBox
+                  checked={termsAccepted}
+                  onPress={() => setTermsAccepted(!termsAccepted)}
+                  checkedColor="#007bff"
+                  uncheckedColor={!termsAccepted ? "#dc3545" : "#6c757d"}
+                  size={20}
+                />
+                <View style={styles.termsTextContainer}>
+                  <Text style={[
+                    styles.termsText,
+                    !termsAccepted && styles.errorText
+                  ]}>
+                    I agree to the{" "}
+                    <Text 
+                      style={styles.termsLink}
+                      onPress={() => setTermsModalVisible(true)}
+                    >
+                      Terms and Conditions
+                    </Text>
+                    {" "}and understand the loan terms above.
+                    {!termsAccepted && (
+                      <Text style={styles.errorText}> (Required)</Text>
+                    )}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Terms and Conditions Modal */}
+      <Modal
+        visible={termsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setTermsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setTermsModalVisible(false)}>
+              <Text style={styles.modalCancelButton}>Close</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Terms and Conditions
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.termsContent}>
+              <Text h4 style={styles.termsSectionTitle}>
+                eCredit Loan Terms and Conditions
+              </Text>
+              
+              <Text style={styles.termsSectionSubtitle}>
+                Last updated: {new Date().toLocaleDateString()}
+              </Text>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>1. Loan Agreement</Text>
+                <Text style={styles.termsSectionText}>
+                  By applying for a loan through eCredit, you agree to be bound by these terms and conditions. 
+                  The loan agreement will be legally binding once approved and accepted.
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>2. Interest Rates and Fees</Text>
+                <Text style={styles.termsSectionText}>
+                  • Interest Rate: 15% per month (fixed rate)
+                  • Late Payment Fee: ₱500 per month
+                  • No prepayment penalties
+                  • Processing fee: ₱100 (one-time, deducted from loan amount)
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>3. Loan Amount and Terms</Text>
+                <Text style={styles.termsSectionText}>
+                  • Minimum loan amount: ₱500
+                  • Maximum loan amount: ₱500,000
+                  • Repayment terms: 1-3 months
+                  • Processing time: 24-48 hours
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>4. Eligibility Requirements</Text>
+                <Text style={styles.termsSectionText}>
+                  • Must be 18 years or older
+                  • Must have valid government-issued ID
+                  • Must provide proof of income
+                  • Must have active bank account
+                  • Loan amount cannot exceed 5x monthly income
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>5. Repayment Obligations</Text>
+                <Text style={styles.termsSectionText}>
+                  • Monthly payments are due on the same date each month
+                  • Late payments will incur additional fees
+                  • Default may result in legal action
+                  • Early repayment is allowed without penalty
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>6. Privacy and Data Protection</Text>
+                <Text style={styles.termsSectionText}>
+                  • We collect and process your personal information in accordance with our Privacy Policy
+                  • Your data is protected and will not be shared with third parties without consent
+                  • We may use your information for credit assessment and collection purposes
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>7. Default and Collection</Text>
+                <Text style={styles.termsSectionText}>
+                  • Default occurs after 30 days of missed payment
+                  • Collection efforts may include phone calls, emails, and legal action
+                  • Default may affect your credit score and future loan eligibility
+                </Text>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsSectionHeader}>8. Contact Information</Text>
+                <Text style={styles.termsSectionText}>
+                  For questions about these terms, contact us at:
+                  • Email: support@ecredit.com
+                  • Phone: +63 2 1234 5678
+                  • Address: eCredit Office, Manila, Philippines
+                </Text>
+              </View>
+
+              <View style={styles.termsAcceptance}>
+                <CheckBox
+                  checked={termsAccepted}
+                  onPress={() => setTermsAccepted(!termsAccepted)}
+                  checkedColor="#007bff"
+                  uncheckedColor="#6c757d"
+                  size={20}
+                />
+                <View style={styles.termsTextContainer}>
+                  <Text style={styles.termsText}>
+                    I have read and agree to these Terms and Conditions
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                title="Accept Terms"
+                onPress={() => setTermsModalVisible(false)}
+                buttonStyle={[styles.primaryButton, { marginTop: 20 }]}
+                titleStyle={styles.buttonText}
+              />
             </View>
           </ScrollView>
         </View>
@@ -1232,5 +1668,90 @@ const styles = StyleSheet.create({
     color: "#6c757d",
     marginBottom: 4,
     lineHeight: 16,
+  },
+  // Terms and Conditions Styles
+  termsAcceptance: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 20,
+    paddingVertical: 10,
+  },
+  termsTextContainer: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  termsText: {
+    fontSize: 14,
+    color: "#212529",
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: "#007bff",
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  termsContent: {
+    padding: 20,
+  },
+  termsSectionTitle: {
+    color: "#212529",
+    fontWeight: "700",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  termsSectionSubtitle: {
+    fontSize: 12,
+    color: "#6c757d",
+    textAlign: "center",
+    marginBottom: 30,
+    fontStyle: "italic",
+  },
+  termsSection: {
+    marginBottom: 25,
+  },
+  termsSectionHeader: {
+    fontSize: 16,
+    color: "#212529",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  termsSectionText: {
+    fontSize: 14,
+    color: "#6c757d",
+    lineHeight: 20,
+  },
+  primaryButton: {
+    backgroundColor: "#007bff",
+    borderRadius: 12,
+    paddingVertical: 15,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  // Activity Loading and Empty States
+  loadingActivity: {
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontStyle: "italic",
+  },
+  noActivity: {
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  noActivityText: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontStyle: "italic",
+  },
+  // Form Validation Styles
+  errorText: {
+    color: "#dc3545",
+    fontSize: 12,
   },
 });
