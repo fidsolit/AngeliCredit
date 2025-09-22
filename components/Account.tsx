@@ -540,6 +540,8 @@ export default function Account({ session }: { session: any }) {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -659,35 +661,36 @@ export default function Account({ session }: { session: any }) {
       <View style={styles.statsContainer}>
         <Card containerStyle={styles.statCard}>
           <View style={styles.statItem}>
-            <Ionicons name="card" size={24} color="#007bff" />
-            <Text style={styles.statLabel}>Credit Score</Text>
+            <Ionicons name="cash" size={24} color="#28a745" />
+            <Text style={styles.statLabel}>Cash Loan</Text>
             <Text
               style={[
                 styles.statValue,
-                { color: getCreditScoreColor(userProfile?.credit_score || 0) },
+                { color: "#28a745" },
               ]}
             >
-              {userProfile?.credit_score || 0}
+              {/* {formatCurrency(1000)}{"-"}{formatCurrency(10000)} */}
+              1K-10K
             </Text>
             <Text
               style={[
                 styles.statSubtext,
-                { color: getCreditScoreColor(userProfile?.credit_score || 0) },
+                { color: "#28a745" },
               ]}
             >
-              {getCreditScoreText(userProfile?.credit_score || 0)}
+              Available
             </Text>
           </View>
         </Card>
 
         <Card containerStyle={styles.statCard}>
           <View style={styles.statItem}>
-            <Ionicons name="cash" size={24} color="#28a745" />
-            <Text style={styles.statLabel}>Loan Limit</Text>
-            <Text style={[styles.statValue, { color: "#28a745" }]}>
-              {formatCurrency(userProfile?.loan_limit || 0)}
+            <Ionicons name="cube" size={24} color="#ff9800" />
+            <Text style={styles.statLabel}>Product Loan</Text>
+            <Text style={[styles.statValue, { color: "#ff9800" }]}>
+            {/* {formatCurrency(10000)} */}
             </Text>
-            <Text style={styles.statSubtext}>Available</Text>
+            <Text style={[styles.statSubtext, { color: "#ff9800" }]}>Available Soon</Text>
           </View>
         </Card>
       </View>
