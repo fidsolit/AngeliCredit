@@ -21,6 +21,8 @@ interface UserProfile {
   credit_score?: number;
   loan_limit?: number;
   avatar_url?: string;
+  id_document_url?: string;
+  id_verification_status?: string;
 }
 
 interface ActivityItem {
@@ -72,6 +74,7 @@ export default function Account({ session }: { session: any }) {
     darkMode: false,
     autoLogout: true,
   });
+  const [idUploading, setIdUploading] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -100,6 +103,8 @@ export default function Account({ session }: { session: any }) {
         credit_score: data?.credit_score || 0,
         loan_limit: data?.loan_limit || 0,
         avatar_url: data?.avatar_url || null,
+        id_document_url: data?.id_document_url || null,
+        id_verification_status: data?.id_verification_status || "not_uploaded",
       });
     } catch (error) {
       console.error("Error:", error);
@@ -332,6 +337,43 @@ export default function Account({ session }: { session: any }) {
     }
   };
 
+  const uploadIdDocument = async (uri: string) => {
+    try {
+      setIdUploading(true);
+
+      // Create a unique filename for ID document
+      const fileExt = uri.split(".").pop()?.toLowerCase() ?? "jpeg";
+      const fileName = `${session.user.id}-id-${Date.now()}.${fileExt}`;
+
+      // Convert image to blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from("id-documents")
+        .upload(fileName, blob, {
+          contentType: `image/${fileExt}`,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("id-documents").getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading ID document:", error);
+      throw error;
+    } finally {
+      setIdUploading(false);
+    }
+  };
+
   const pickImage = async () => {
     try {
       // Request permission
@@ -364,6 +406,61 @@ export default function Account({ session }: { session: any }) {
     } catch (error) {
       console.error("Error picking image:", error);
       Alert.alert("Error", "Failed to upload image. Please try again.");
+    }
+  };
+
+  const pickIdDocument = async () => {
+    try {
+      // Request permission
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission needed",
+          "Please grant camera roll permissions to upload your ID document."
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 10], // Better aspect ratio for ID documents
+        quality: 0.9, // Higher quality for ID documents
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        const publicUrl = await uploadIdDocument(imageUri);
+
+        // Update profile with ID document
+        const { error } = await supabase.from("profiles").upsert({
+          id: session.user.id,
+          id_document_url: publicUrl,
+          id_verification_status: "pending",
+          updated_at: new Date().toISOString(),
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        // Update local state
+        setUserProfile(prev => prev ? {
+          ...prev,
+          id_document_url: publicUrl,
+          id_verification_status: "pending"
+        } : null);
+
+        Alert.alert(
+          "ID Document Uploaded",
+          "Your ID document has been uploaded successfully. It will be reviewed within 24-48 hours."
+        );
+      }
+    } catch (error) {
+      console.error("Error uploading ID document:", error);
+      Alert.alert("Error", "Failed to upload ID document. Please try again.");
     }
   };
 
@@ -816,6 +913,34 @@ export default function Account({ session }: { session: any }) {
     return "Poor";
   };
 
+  const getIdVerificationStatus = (status: string) => {
+    switch (status) {
+      case "verified":
+        return "Verified";
+      case "pending":
+        return "Pending Review";
+      case "rejected":
+        return "Rejected";
+      case "not_uploaded":
+      default:
+        return "Not Uploaded";
+    }
+  };
+
+  const getIdVerificationColor = (status: string) => {
+    switch (status) {
+      case "verified":
+        return "#28a745";
+      case "pending":
+        return "#ff9800";
+      case "rejected":
+        return "#dc3545";
+      case "not_uploaded":
+      default:
+        return "#6c757d";
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -847,6 +972,19 @@ export default function Account({ session }: { session: any }) {
             <Text style={styles.userPhone}>
               {userProfile?.phone || "No phone number"}
             </Text>
+            <View style={styles.idVerificationStatus}>
+              <Ionicons 
+                name="card" 
+                size={16} 
+                color={getIdVerificationColor(userProfile?.id_verification_status || "not_uploaded")} 
+              />
+              <Text style={[
+                styles.idStatusText,
+                { color: getIdVerificationColor(userProfile?.id_verification_status || "not_uploaded") }
+              ]}>
+                ID: {getIdVerificationStatus(userProfile?.id_verification_status || "not_uploaded")}
+              </Text>
+            </View>
           </View>
           <View style={styles.profileActions}>
             <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
@@ -1099,6 +1237,47 @@ export default function Account({ session }: { session: any }) {
                 containerStyle={styles.inputContainer}
                 inputStyle={styles.disabledInput}
               />
+
+              {/* ID Document Upload Section */}
+              <View style={styles.idUploadSection}>
+                <Text style={styles.idUploadTitle}>ID Document Verification</Text>
+                <Text style={styles.idUploadDescription}>
+                  Upload a valid government-issued ID (Driver's License, Passport, National ID) for verification.
+                </Text>
+                
+                {editingProfile?.id_document_url ? (
+                  <View style={styles.idDocumentPreview}>
+                    <Image 
+                      source={{ uri: editingProfile.id_document_url }} 
+                      style={styles.idDocumentImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.idDocumentInfo}>
+                      <Text style={styles.idDocumentStatus}>
+                        Status: {getIdVerificationStatus(editingProfile.id_verification_status || "not_uploaded")}
+                      </Text>
+                      <Text style={styles.idDocumentNote}>
+                        Document uploaded successfully
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.idUploadButton} 
+                    onPress={pickIdDocument}
+                    disabled={idUploading}
+                  >
+                    <Ionicons 
+                      name={idUploading ? "hourglass" : "cloud-upload"} 
+                      size={24} 
+                      color="#007bff" 
+                    />
+                    <Text style={styles.idUploadButtonText}>
+                      {idUploading ? "Uploading..." : "Upload ID Document"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           </ScrollView>
         </View>
@@ -2671,5 +2850,83 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6c757d",
     lineHeight: 16,
+  },
+  // ID Verification Styles
+  idVerificationStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  idStatusText: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 4,
+  },
+  idUploadSection: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  idUploadTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 8,
+  },
+  idUploadDescription: {
+    fontSize: 12,
+    color: "#6c757d",
+    lineHeight: 16,
+    marginBottom: 16,
+  },
+  idUploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#007bff",
+    borderStyle: "dashed",
+  },
+  idUploadButtonText: {
+    marginLeft: 8,
+    color: "#007bff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  idDocumentPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  idDocumentImage: {
+    width: 60,
+    height: 40,
+    borderRadius: 4,
+    backgroundColor: "#f8f9fa",
+  },
+  idDocumentInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  idDocumentStatus: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 2,
+  },
+  idDocumentNote: {
+    fontSize: 12,
+    color: "#6c757d",
   },
 });
