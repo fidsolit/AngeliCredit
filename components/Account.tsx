@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 
 interface UserProfile {
   id: string;
@@ -118,6 +119,9 @@ export default function Account({ session }: { session: any }) {
     full_name: "",
     phone: "",
   });
+  const [locationPermission, setLocationPermission] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
+  const [updateProfileModalVisible, setUpdateProfileModalVisible] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -1064,6 +1068,112 @@ export default function Account({ session }: { session: any }) {
     }
   };
 
+  // Location and Update Profile Functions
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to update your address automatically.'
+        );
+        return false;
+      }
+      setLocationPermission(true);
+      return true;
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      Alert.alert('Error', 'Failed to request location permission.');
+      return false;
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) return;
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      
+      setCurrentLocation(location);
+      
+      // Reverse geocode to get address
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (address.length > 0) {
+        const addr = address[0];
+        setAddressForm(prev => ({
+          ...prev,
+          house_number: prev.house_number || `${addr.streetNumber || ''} ${addr.street || ''}`.trim(),
+          city: addr.city || prev.city,
+          province: addr.region || prev.province,
+          postal_code: addr.postalCode || prev.postal_code,
+        }));
+      }
+
+      Alert.alert(
+        'Location Updated',
+        'Your current location has been used to update your address information.'
+      );
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Failed to get your current location.');
+    }
+  };
+
+  const openUpdateProfile = () => {
+    setUpdateProfileModalVisible(true);
+    // Initialize forms with current data
+    setAddressForm({
+      house_number: userProfile?.house_number || "",
+      province: userProfile?.province || "",
+      city: userProfile?.city || "",
+      barangay: userProfile?.barangay || "",
+      postal_code: userProfile?.postal_code || "",
+      landline: userProfile?.landline || "",
+      work_from_home: userProfile?.work_from_home || false,
+    });
+  };
+
+  const closeUpdateProfile = () => {
+    setUpdateProfileModalVisible(false);
+  };
+
+  const saveUpdatedProfile = async () => {
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        house_number: addressForm.house_number,
+        province: addressForm.province,
+        city: addressForm.city,
+        barangay: addressForm.barangay,
+        postal_code: addressForm.postal_code,
+        landline: addressForm.landline,
+        work_from_home: addressForm.work_from_home,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setUserProfile(prev => prev ? {
+        ...prev,
+        ...addressForm
+      } : null);
+
+      Alert.alert("Success", "Profile updated successfully!");
+      closeUpdateProfile();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Alert.alert("Error", "Failed to update profile information.");
+    }
+  };
+
   const calculateLoanDetailsForCalculator = (amount: number, termMonths: number, interestRate: number) => {
     if (amount <= 0 || termMonths <= 0 || interestRate < 0) {
       return {
@@ -1189,7 +1299,7 @@ export default function Account({ session }: { session: any }) {
             </View>
             
             {/* Profile Completion Status */}
-            {!userProfile?.profile_completed && (
+            {!userProfile?.profile_completed ? (
               <TouchableOpacity style={styles.profileCompletionBanner} onPress={openProfileSetup}>
                 <View style={styles.profileCompletionContent}>
                   <Ionicons name="person-add" size={16} color="#ff9800" />
@@ -1197,6 +1307,16 @@ export default function Account({ session }: { session: any }) {
                     Complete your profile to unlock more features
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color="#ff9800" />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.updateProfileBanner} onPress={openUpdateProfile}>
+                <View style={styles.updateProfileContent}>
+                  <Ionicons name="location" size={16} color="#007bff" />
+                  <Text style={styles.updateProfileText}>
+                    Update your address and location
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="#007bff" />
                 </View>
               </TouchableOpacity>
             )}
@@ -2771,6 +2891,169 @@ export default function Account({ session }: { session: any }) {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Update Profile Modal */}
+      <Modal
+        visible={updateProfileModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeUpdateProfile}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeUpdateProfile}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Update Address & Location
+            </Text>
+            <TouchableOpacity onPress={saveUpdatedProfile}>
+              <Text style={styles.modalSaveButton}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.formSection}>
+              <Text style={styles.stepDescription}>
+                Update your residential address information. You can use your current location to automatically fill in the address fields.
+              </Text>
+
+              {/* Location Button */}
+              <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation}>
+                <Ionicons name="location" size={24} color="#007bff" />
+                <Text style={styles.locationButtonText}>
+                  Use Current Location
+                </Text>
+                <Text style={styles.locationButtonSubtext}>
+                  Automatically fill address from GPS
+                </Text>
+              </TouchableOpacity>
+
+              <Input
+                label="House No. / Unit No. / Street Name"
+                value={addressForm.house_number}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, house_number: text })
+                }
+                placeholder="Enter house number, unit, or street name"
+                containerStyle={styles.inputContainer}
+              />
+
+              <Input
+                label="Province"
+                value={addressForm.province}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, province: text })
+                }
+                placeholder="Enter province"
+                containerStyle={styles.inputContainer}
+              />
+
+              <Input
+                label="City"
+                value={addressForm.city}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, city: text })
+                }
+                placeholder="Enter city"
+                containerStyle={styles.inputContainer}
+              />
+
+              <Input
+                label="Barangay (optional)"
+                value={addressForm.barangay}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, barangay: text })
+                }
+                placeholder="Enter barangay"
+                containerStyle={styles.inputContainer}
+              />
+
+              <Input
+                label="Postal code / Zip code"
+                value={addressForm.postal_code}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, postal_code: text })
+                }
+                placeholder="Enter postal code"
+                keyboardType="numeric"
+                containerStyle={styles.inputContainer}
+              />
+
+              <Input
+                label="Landline (optional)"
+                value={addressForm.landline}
+                onChangeText={(text) =>
+                  setAddressForm({ ...addressForm, landline: text })
+                }
+                placeholder="Enter landline number"
+                keyboardType="phone-pad"
+                containerStyle={styles.inputContainer}
+              />
+
+              <View style={styles.workFromHomeSection}>
+                <Text style={styles.workFromHomeQuestion}>
+                  Do you work from home?
+                </Text>
+                <View style={styles.radioButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.radioButton}
+                    onPress={() =>
+                      setAddressForm({ ...addressForm, work_from_home: true })
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.radioCircle,
+                        {
+                          backgroundColor: addressForm.work_from_home
+                            ? "#007bff"
+                            : "transparent",
+                        },
+                      ]}
+                    />
+                    <Text style={styles.radioLabel}>Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.radioButton}
+                    onPress={() =>
+                      setAddressForm({ ...addressForm, work_from_home: false })
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.radioCircle,
+                        {
+                          backgroundColor: !addressForm.work_from_home
+                            ? "#007bff"
+                            : "transparent",
+                        },
+                      ]}
+                    />
+                    <Text style={styles.radioLabel}>No</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Current Location Display */}
+              {currentLocation && (
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationInfoTitle}>Current Location:</Text>
+                  <Text style={styles.locationInfoText}>
+                    Lat: {currentLocation.coords.latitude.toFixed(6)}
+                  </Text>
+                  <Text style={styles.locationInfoText}>
+                    Lng: {currentLocation.coords.longitude.toFixed(6)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -3758,5 +4041,65 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 16,
     color: "#212529",
+  },
+  // Update Profile Styles
+  updateProfileBanner: {
+    marginTop: 12,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#bbdefb",
+  },
+  updateProfileContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+  },
+  updateProfileText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#1976d2",
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9ff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#007bff",
+    borderStyle: "dashed",
+    marginBottom: 20,
+  },
+  locationButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#007bff",
+  },
+  locationButtonSubtext: {
+    marginLeft: 12,
+    fontSize: 12,
+    color: "#6c757d",
+    marginTop: 2,
+  },
+  locationInfo: {
+    backgroundColor: "#f8f9fa",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  locationInfoTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  locationInfoText: {
+    fontSize: 12,
+    color: "#6c757d",
+    fontFamily: "monospace",
   },
 });
