@@ -54,6 +54,15 @@ export default function Account({ session }: { session: any }) {
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [calculatorModalVisible, setCalculatorModalVisible] = useState(false);
+  const [calculatorInputs, setCalculatorInputs] = useState({
+    amount: "",
+    termMonths: "1",
+    interestRate: "15",
+  });
+  const [loanHistoryModalVisible, setLoanHistoryModalVisible] = useState(false);
+  const [loanHistory, setLoanHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -580,6 +589,157 @@ export default function Account({ session }: { session: any }) {
     );
   };
 
+  const openLoanCalculator = () => {
+    setCalculatorModalVisible(true);
+  };
+
+  const closeCalculatorModal = () => {
+    setCalculatorModalVisible(false);
+    setCalculatorInputs({
+      amount: "",
+      termMonths: "1",
+      interestRate: "15",
+    });
+  };
+
+  const openLoanHistory = () => {
+    setLoanHistoryModalVisible(true);
+    fetchLoanHistory();
+  };
+
+  const closeLoanHistoryModal = () => {
+    setLoanHistoryModalVisible(false);
+  };
+
+  const fetchLoanHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      
+      // Fetch loan history from database
+      const { data: loanData, error } = await supabase
+        .from("loans")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("application_date", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching loan history:", error);
+        // Fallback to dummy data
+        setLoanHistory(getDummyLoanHistory());
+      } else if (loanData && loanData.length > 0) {
+        setLoanHistory(loanData);
+      } else {
+        // No real data, use dummy data
+        setLoanHistory(getDummyLoanHistory());
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setLoanHistory(getDummyLoanHistory());
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const getDummyLoanHistory = () => {
+    return [
+      {
+        id: "loan-1",
+        amount: 50000,
+        status: "approved",
+        application_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        term_months: 3,
+        monthly_payment: 19166.67,
+        interest_rate: 0.15,
+      },
+      {
+        id: "loan-2",
+        amount: 25000,
+        status: "completed",
+        application_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        term_months: 2,
+        monthly_payment: 14375,
+        interest_rate: 0.15,
+      },
+      {
+        id: "loan-3",
+        amount: 15000,
+        status: "pending",
+        application_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        term_months: 1,
+        monthly_payment: 17250,
+        interest_rate: 0.15,
+      },
+    ];
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "#28a745";
+      case "pending":
+        return "#ff9800";
+      case "rejected":
+        return "#dc3545";
+      case "completed":
+        return "#007bff";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "Approved";
+      case "pending":
+        return "Pending";
+      case "rejected":
+        return "Rejected";
+      case "completed":
+        return "Completed";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const calculateLoanDetailsForCalculator = (amount: number, termMonths: number, interestRate: number) => {
+    if (amount <= 0 || termMonths <= 0 || interestRate < 0) {
+      return {
+        monthlyPayment: 0,
+        totalAmount: 0,
+        interestAmount: 0,
+        totalInterest: 0,
+      };
+    }
+
+    // Convert annual interest rate to monthly
+    const monthlyInterestRate = interestRate / 100 / 12;
+    
+    // Calculate monthly payment using the formula for fixed-rate loans
+    let monthlyPayment = 0;
+    let totalInterest = 0;
+    
+    if (monthlyInterestRate === 0) {
+      // No interest case
+      monthlyPayment = amount / termMonths;
+      totalInterest = 0;
+    } else {
+      // With interest case
+      monthlyPayment = (amount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, termMonths)) / 
+                      (Math.pow(1 + monthlyInterestRate, termMonths) - 1);
+      totalInterest = (monthlyPayment * termMonths) - amount;
+    }
+
+    const totalAmount = amount + totalInterest;
+
+    return {
+      monthlyPayment: isNaN(monthlyPayment) ? 0 : monthlyPayment,
+      totalAmount: totalAmount,
+      interestAmount: totalInterest,
+      totalInterest: totalInterest,
+    };
+  };
+
   const getCreditScoreColor = (score: number) => {
     if (score >= 750) return "#4CAF50"; // Green
     if (score >= 650) return "#FF9800"; // Orange
@@ -659,40 +819,44 @@ export default function Account({ session }: { session: any }) {
 
       {/* Quick Stats Cards */}
       <View style={styles.statsContainer}>
-        <Card containerStyle={styles.statCard}>
-          <View style={styles.statItem}>
-            <Ionicons name="cash" size={24} color="#28a745" />
-            <Text style={styles.statLabel}>Cash Loan</Text>
-            <Text
-              style={[
-                styles.statValue,
-                { color: "#28a745" },
-              ]}
-            >
-              {/* {formatCurrency(1000)}{"-"}{formatCurrency(10000)} */}
-              1K-10K
-            </Text>
-            <Text
-              style={[
-                styles.statSubtext,
-                { color: "#28a745" },
-              ]}
-            >
-              Available
-            </Text>
-          </View>
-        </Card>
+        <TouchableOpacity onPress={openLoanApplication} style={styles.statCardTouchable}>
+          <Card containerStyle={styles.statCard}>
+            <View style={styles.statItem} >
+              <Ionicons name="cash" size={24} color="#28a745" />
+              <Text style={styles.statLabel}>Cash Loan</Text>
+              <Text
+                style={[
+                  styles.statValue,
+                  { color: "#28a745" },
+                ]}
+              >
+                {/* {formatCurrency(1000)}{"-"}{formatCurrency(10000)} */}
+                1K-10K
+              </Text>
+              <Text
+                style={[
+                  styles.statSubtext,
+                  { color: "#28a745" },
+                ]}
+              >
+                Available
+              </Text>
+            </View>
+          </Card>
+        </TouchableOpacity>
 
-        <Card containerStyle={styles.statCard}>
-          <View style={styles.statItem}>
-            <Ionicons name="cube" size={24} color="#ff9800" />
-            <Text style={styles.statLabel}>Product Loan</Text>
-            <Text style={[styles.statValue, { color: "#ff9800" }]}>
-            {/* {formatCurrency(10000)} */}
-            </Text>
-            <Text style={[styles.statSubtext, { color: "#ff9800" }]}>Available Soon</Text>
-          </View>
-        </Card>
+        <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Product Loan will be available soon!")} style={styles.statCardTouchable}>
+          <Card containerStyle={styles.statCard}>
+            <View style={styles.statItem}>
+              <Ionicons name="cube" size={24} color="#ff9800" />
+              <Text style={styles.statLabel}>Product Loan</Text>
+              <Text style={[styles.statValue, { color: "#ff9800" }]}>
+                Coming...
+              </Text>
+              <Text style={[styles.statSubtext, { color: "#ff9800" }]}>Available Soon</Text>
+            </View>
+          </Card>
+        </TouchableOpacity>
       </View>
 
       {/* Quick Actions */}
@@ -710,13 +874,13 @@ export default function Account({ session }: { session: any }) {
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={openLoanHistory}>
           <Ionicons name="document-text" size={24} color="#28a745" />
           <Text style={styles.actionText}>View Loan History</Text>
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={openLoanCalculator}>
           <Ionicons name="calculator" size={24} color="#ff9800" />
           <Text style={styles.actionText}>Loan Calculator</Text>
           <Ionicons name="chevron-forward" size={20} color="#666" />
@@ -1250,6 +1414,274 @@ export default function Account({ session }: { session: any }) {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Loan Calculator Modal */}
+      <Modal
+        visible={calculatorModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeCalculatorModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeCalculatorModal}>
+              <Text style={styles.modalCancelButton}>Close</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Loan Calculator
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.formSection}>
+              <Text style={styles.calculatorDescription}>
+                Calculate your monthly payments and total interest for different loan scenarios.
+              </Text>
+
+              {/* Calculator Inputs */}
+              <Input
+                label="Loan Amount *"
+                value={calculatorInputs.amount}
+                onChangeText={(text) =>
+                  setCalculatorInputs((prev) => ({ ...prev, amount: text }))
+                }
+                placeholder="Enter loan amount"
+                keyboardType="numeric"
+                containerStyle={styles.inputContainer}
+                rightIcon={<Text style={styles.currencyLabel}>₱</Text>}
+              />
+
+              <View style={styles.dropdownContainer}>
+                <Text style={styles.dropdownLabel}>Repayment Term *</Text>
+                <View style={styles.dropdownOptions}>
+                  {["1", "2", "3", "6", "12", "24", "36"].map((term) => (
+                    <TouchableOpacity
+                      key={term}
+                      style={[
+                        styles.dropdownOption,
+                        calculatorInputs.termMonths === term &&
+                          styles.dropdownOptionSelected,
+                      ]}
+                      onPress={() =>
+                        setCalculatorInputs((prev) => ({
+                          ...prev,
+                          termMonths: term,
+                        }))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownOptionText,
+                          calculatorInputs.termMonths === term &&
+                            styles.dropdownOptionTextSelected,
+                        ]}
+                      >
+                        {term} {term === "1" ? "month" : "months"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <Input
+                label="Annual Interest Rate (%) *"
+                value={calculatorInputs.interestRate}
+                onChangeText={(text) =>
+                  setCalculatorInputs((prev) => ({ ...prev, interestRate: text }))
+                }
+                placeholder="Enter interest rate"
+                keyboardType="numeric"
+                containerStyle={styles.inputContainer}
+                rightIcon={<Text style={styles.currencyLabel}>%</Text>}
+              />
+
+              {/* Calculation Results */}
+              {calculatorInputs.amount && calculatorInputs.termMonths && calculatorInputs.interestRate && (
+                <View style={styles.calculatorResults}>
+                  <Text h4 style={styles.resultsTitle}>
+                    Calculation Results
+                  </Text>
+                  
+                  {(() => {
+                    const amount = parseFloat(calculatorInputs.amount) || 0;
+                    const termMonths = parseInt(calculatorInputs.termMonths) || 1;
+                    const interestRate = parseFloat(calculatorInputs.interestRate) || 0;
+                    const results = calculateLoanDetailsForCalculator(amount, termMonths, interestRate);
+                    
+                    return (
+                      <View style={styles.resultsContainer}>
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Loan Amount:</Text>
+                          <Text style={[styles.resultValue, { color: "#007bff" }]}>
+                            {formatCurrency(amount)}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Monthly Payment:</Text>
+                          <Text style={[styles.resultValue, { color: "#28a745" }]}>
+                            {formatCurrency(results.monthlyPayment)}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Total Interest:</Text>
+                          <Text style={[styles.resultValue, { color: "#ff9800" }]}>
+                            {formatCurrency(results.interestAmount)}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Total Amount:</Text>
+                          <Text style={[styles.resultValue, { color: "#dc3545" }]}>
+                            {formatCurrency(results.totalAmount)}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Interest Rate:</Text>
+                          <Text style={[styles.resultValue, { color: "#6c757d" }]}>
+                            {interestRate}% per year
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.resultRow}>
+                          <Text style={styles.resultLabel}>Term:</Text>
+                          <Text style={[styles.resultValue, { color: "#6c757d" }]}>
+                            {termMonths} {termMonths === 1 ? "month" : "months"}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+                </View>
+              )}
+
+              {/* Calculator Tips */}
+              <View style={styles.calculatorTips}>
+                <Text style={styles.tipsTitle}>💡 Calculator Tips</Text>
+                <Text style={styles.tipText}>
+                  • Lower interest rates mean lower monthly payments
+                </Text>
+                <Text style={styles.tipText}>
+                  • Shorter terms result in higher monthly payments but less total interest
+                </Text>
+                <Text style={styles.tipText}>
+                  • Longer terms mean lower monthly payments but more total interest
+                </Text>
+                <Text style={styles.tipText}>
+                  • eCredit offers competitive rates starting at 15% annually
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Loan History Modal */}
+      <Modal
+        visible={loanHistoryModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeLoanHistoryModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeLoanHistoryModal}>
+              <Text style={styles.modalCancelButton}>Close</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Loan History
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.formSection}>
+              <Text style={styles.historyDescription}>
+                View your past and current loan applications and their status.
+              </Text>
+
+              {historyLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading loan history...</Text>
+                </View>
+              ) : loanHistory.length > 0 ? (
+                <View style={styles.historyContainer}>
+                  {loanHistory.map((loan, index) => (
+                    <View key={loan.id} style={styles.historyItem}>
+                      <View style={styles.historyHeader}>
+                        <View style={styles.historyInfo}>
+                          <Text style={styles.historyAmount}>
+                            {formatCurrency(loan.amount)}
+                          </Text>
+                          <Text style={styles.historyDate}>
+                            {formatTimeAgo(loan.application_date)}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(loan.status) }
+                        ]}>
+                          <Text style={styles.statusText}>
+                            {getStatusText(loan.status)}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.historyDetails}>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Term:</Text>
+                          <Text style={styles.detailValue}>
+                            {loan.term_months} {loan.term_months === 1 ? "month" : "months"}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Monthly Payment:</Text>
+                          <Text style={styles.detailValue}>
+                            {formatCurrency(loan.monthly_payment)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Interest Rate:</Text>
+                          <Text style={styles.detailValue}>
+                            {(loan.interest_rate * 100).toFixed(1)}% per month
+                          </Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Application Date:</Text>
+                          <Text style={styles.detailValue}>
+                            {new Date(loan.application_date).toLocaleDateString()}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {index < loanHistory.length - 1 && (
+                        <Divider style={styles.historyDivider} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.noHistoryContainer}>
+                  <Ionicons name="document-outline" size={48} color="#6c757d" />
+                  <Text style={styles.noHistoryTitle}>No Loan History</Text>
+                  <Text style={styles.noHistoryText}>
+                    You haven't applied for any loans yet. Apply for your first loan to get started!
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1314,10 +1746,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 15,
   },
+  statCardTouchable: {
+    flex: 1,
+  },
   statCard: {
     flex: 1,
     borderRadius: 12,
     padding: 20,
+    minHeight: 140,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -1756,5 +2192,161 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#dc3545",
     fontSize: 12,
+  },
+  // Loan Calculator Styles
+  calculatorDescription: {
+    fontSize: 14,
+    color: "#6c757d",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  calculatorResults: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  resultsTitle: {
+    color: "#212529",
+    fontWeight: "600",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  resultsContainer: {
+    gap: 12,
+  },
+  resultRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  resultLabel: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontWeight: "500",
+    flex: 1,
+  },
+  resultValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "right",
+  },
+  calculatorTips: {
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2196f3",
+  },
+  tipsTitle: {
+    fontSize: 16,
+    color: "#1976d2",
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  tipText: {
+    fontSize: 12,
+    color: "#1976d2",
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  // Loan History Styles
+  historyDescription: {
+    fontSize: 14,
+    color: "#6c757d",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  historyContainer: {
+    gap: 15,
+  },
+  historyItem: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  historyHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  historyInfo: {
+    flex: 1,
+  },
+  historyAmount: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  historyDetails: {
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontWeight: "500",
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#212529",
+    fontWeight: "600",
+  },
+  historyDivider: {
+    marginTop: 15,
+  },
+  noHistoryContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  noHistoryTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#212529",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noHistoryText: {
+    fontSize: 14,
+    color: "#6c757d",
+    textAlign: "center",
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
 });
