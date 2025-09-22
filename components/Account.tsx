@@ -23,6 +23,25 @@ interface UserProfile {
   avatar_url?: string;
   id_document_url?: string;
   id_verification_status?: string;
+  // Address Information
+  house_number?: string;
+  province?: string;
+  city?: string;
+  barangay?: string;
+  postal_code?: string;
+  landline?: string;
+  work_from_home?: boolean;
+  // Income Information
+  main_income_source?: string;
+  business_name?: string;
+  payout_frequency?: string;
+  payout_days?: string;
+  employment_company?: string;
+  employment_position?: string;
+  monthly_income?: number;
+  // Profile Completion
+  profile_completion_step?: number;
+  profile_completed?: boolean;
 }
 
 interface ActivityItem {
@@ -75,6 +94,30 @@ export default function Account({ session }: { session: any }) {
     autoLogout: true,
   });
   const [idUploading, setIdUploading] = useState(false);
+  const [profileSetupModalVisible, setProfileSetupModalVisible] = useState(false);
+  const [currentSetupStep, setCurrentSetupStep] = useState(1);
+  const [addressForm, setAddressForm] = useState({
+    house_number: "",
+    province: "",
+    city: "",
+    barangay: "",
+    postal_code: "",
+    landline: "",
+    work_from_home: false,
+  });
+  const [incomeForm, setIncomeForm] = useState({
+    main_income_source: "",
+    business_name: "",
+    payout_frequency: "",
+    payout_days: "",
+    employment_company: "",
+    employment_position: "",
+    monthly_income: 0,
+  });
+  const [basicInfoForm, setBasicInfoForm] = useState({
+    full_name: "",
+    phone: "",
+  });
 
   useEffect(() => {
     if (session?.user) {
@@ -105,6 +148,25 @@ export default function Account({ session }: { session: any }) {
         avatar_url: data?.avatar_url || null,
         id_document_url: data?.id_document_url || null,
         id_verification_status: data?.id_verification_status || "not_uploaded",
+        // Address Information
+        house_number: data?.house_number || "",
+        province: data?.province || "",
+        city: data?.city || "",
+        barangay: data?.barangay || "",
+        postal_code: data?.postal_code || "",
+        landline: data?.landline || "",
+        work_from_home: data?.work_from_home || false,
+        // Income Information
+        main_income_source: data?.main_income_source || "",
+        business_name: data?.business_name || "",
+        payout_frequency: data?.payout_frequency || "",
+        payout_days: data?.payout_days || "",
+        employment_company: data?.employment_company || "",
+        employment_position: data?.employment_position || "",
+        monthly_income: data?.monthly_income || 0,
+        // Profile Completion
+        profile_completion_step: data?.profile_completion_step || 1,
+        profile_completed: data?.profile_completed || false,
       });
     } catch (error) {
       console.error("Error:", error);
@@ -862,6 +924,146 @@ export default function Account({ session }: { session: any }) {
     );
   };
 
+  // Profile Setup Functions
+  const openProfileSetup = () => {
+    setProfileSetupModalVisible(true);
+    setCurrentSetupStep(userProfile?.profile_completion_step || 1);
+    
+    // Initialize forms with existing data
+    setBasicInfoForm({
+      full_name: userProfile?.full_name || "",
+      phone: userProfile?.phone || "",
+    });
+    
+    setAddressForm({
+      house_number: userProfile?.house_number || "",
+      province: userProfile?.province || "",
+      city: userProfile?.city || "",
+      barangay: userProfile?.barangay || "",
+      postal_code: userProfile?.postal_code || "",
+      landline: userProfile?.landline || "",
+      work_from_home: userProfile?.work_from_home || false,
+    });
+    
+    setIncomeForm({
+      main_income_source: userProfile?.main_income_source || "",
+      business_name: userProfile?.business_name || "",
+      payout_frequency: userProfile?.payout_frequency || "",
+      payout_days: userProfile?.payout_days || "",
+      employment_company: userProfile?.employment_company || "",
+      employment_position: userProfile?.employment_position || "",
+      monthly_income: userProfile?.monthly_income || 0,
+    });
+  };
+
+  const closeProfileSetup = () => {
+    setProfileSetupModalVisible(false);
+    setCurrentSetupStep(1);
+  };
+
+  const nextStep = () => {
+    if (currentSetupStep < 5) {
+      setCurrentSetupStep(currentSetupStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentSetupStep > 1) {
+      setCurrentSetupStep(currentSetupStep - 1);
+    }
+  };
+
+  const saveBasicInfo = async () => {
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        full_name: basicInfoForm.full_name,
+        phone: basicInfoForm.phone,
+        profile_completion_step: 2,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setUserProfile(prev => prev ? {
+        ...prev,
+        ...basicInfoForm,
+        profile_completion_step: 2
+      } : null);
+
+      nextStep();
+    } catch (error) {
+      console.error("Error saving basic info:", error);
+      Alert.alert("Error", "Failed to save basic information.");
+    }
+  };
+
+  const saveAddressInfo = async () => {
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        house_number: addressForm.house_number,
+        province: addressForm.province,
+        city: addressForm.city,
+        barangay: addressForm.barangay,
+        postal_code: addressForm.postal_code,
+        landline: addressForm.landline,
+        work_from_home: addressForm.work_from_home,
+        profile_completion_step: 3,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setUserProfile(prev => prev ? {
+        ...prev,
+        ...addressForm,
+        profile_completion_step: 3
+      } : null);
+
+      nextStep();
+    } catch (error) {
+      console.error("Error saving address:", error);
+      Alert.alert("Error", "Failed to save address information.");
+    }
+  };
+
+  const saveIncomeInfo = async () => {
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        main_income_source: incomeForm.main_income_source,
+        business_name: incomeForm.business_name,
+        payout_frequency: incomeForm.payout_frequency,
+        payout_days: incomeForm.payout_days,
+        employment_company: incomeForm.employment_company,
+        employment_position: incomeForm.employment_position,
+        monthly_income: incomeForm.monthly_income,
+        profile_completion_step: 5,
+        profile_completed: true,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setUserProfile(prev => prev ? {
+        ...prev,
+        ...incomeForm,
+        profile_completion_step: 5,
+        profile_completed: true
+      } : null);
+
+      Alert.alert("Success", "Profile setup completed successfully!");
+      closeProfileSetup();
+    } catch (error) {
+      console.error("Error saving income info:", error);
+      Alert.alert("Error", "Failed to save income information.");
+    }
+  };
+
   const calculateLoanDetailsForCalculator = (amount: number, termMonths: number, interestRate: number) => {
     if (amount <= 0 || termMonths <= 0 || interestRate < 0) {
       return {
@@ -985,6 +1187,19 @@ export default function Account({ session }: { session: any }) {
                 ID: {getIdVerificationStatus(userProfile?.id_verification_status || "not_uploaded")}
               </Text>
             </View>
+            
+            {/* Profile Completion Status */}
+            {!userProfile?.profile_completed && (
+              <TouchableOpacity style={styles.profileCompletionBanner} onPress={openProfileSetup}>
+                <View style={styles.profileCompletionContent}>
+                  <Ionicons name="person-add" size={16} color="#ff9800" />
+                  <Text style={styles.profileCompletionText}>
+                    Complete your profile to unlock more features
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="#ff9800" />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.profileActions}>
             <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
@@ -2117,6 +2332,445 @@ export default function Account({ session }: { session: any }) {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Profile Setup Modal */}
+      <Modal
+        visible={profileSetupModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeProfileSetup}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeProfileSetup}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Complete Your Profile
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          {/* Progress Indicator */}
+          <View style={styles.progressContainer}>
+            {[1, 2, 3, 4, 5].map((step) => (
+              <View key={step} style={styles.progressStep}>
+                <View
+                  style={[
+                    styles.progressCircle,
+                    {
+                      backgroundColor:
+                        step <= currentSetupStep ? "#28a745" : "#e9ecef",
+                    },
+                  ]}
+                >
+                  {step < currentSetupStep ? (
+                    <Ionicons name="checkmark" size={16} color="white" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.progressText,
+                        {
+                          color: step <= currentSetupStep ? "white" : "#6c757d",
+                        },
+                      ]}
+                    >
+                      {step}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Step 1: Basic Information */}
+            {currentSetupStep === 1 && (
+              <View style={styles.formSection}>
+                <Text style={styles.stepTitle}>Basic Information</Text>
+                <Text style={styles.stepDescription}>
+                  Let's start with your basic information to personalize your experience.
+                </Text>
+
+                <Input
+                  label="Full Name"
+                  value={basicInfoForm.full_name}
+                  onChangeText={(text) =>
+                    setBasicInfoForm({ ...basicInfoForm, full_name: text })
+                  }
+                  placeholder="Enter your full name"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="Phone Number"
+                  value={basicInfoForm.phone}
+                  onChangeText={(text) =>
+                    setBasicInfoForm({ ...basicInfoForm, phone: text })
+                  }
+                  placeholder="Enter your phone number"
+                  keyboardType="phone-pad"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Button
+                  title="Continue"
+                  onPress={saveBasicInfo}
+                  buttonStyle={styles.continueButton}
+                  titleStyle={styles.continueButtonText}
+                />
+              </View>
+            )}
+
+            {/* Step 2: Address Information */}
+            {currentSetupStep === 2 && (
+              <View style={styles.formSection}>
+                <Text style={styles.stepTitle}>Current Residential Address</Text>
+                <Text style={styles.stepDescription}>
+                  Please provide your current residential address for verification purposes.
+                </Text>
+
+                <Input
+                  label="House No. / Unit No. / Street Name"
+                  value={addressForm.house_number}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, house_number: text })
+                  }
+                  placeholder="Enter house number, unit, or street name"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="Province"
+                  value={addressForm.province}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, province: text })
+                  }
+                  placeholder="Enter province"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="City"
+                  value={addressForm.city}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, city: text })
+                  }
+                  placeholder="Enter city"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="Barangay (optional)"
+                  value={addressForm.barangay}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, barangay: text })
+                  }
+                  placeholder="Enter barangay"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="Postal code / Zip code"
+                  value={addressForm.postal_code}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, postal_code: text })
+                  }
+                  placeholder="Enter postal code"
+                  keyboardType="numeric"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <Input
+                  label="Landline (optional)"
+                  value={addressForm.landline}
+                  onChangeText={(text) =>
+                    setAddressForm({ ...addressForm, landline: text })
+                  }
+                  placeholder="Enter landline number"
+                  keyboardType="phone-pad"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <View style={styles.workFromHomeSection}>
+                  <Text style={styles.workFromHomeQuestion}>
+                    Do you work from home?
+                  </Text>
+                  <View style={styles.radioButtonContainer}>
+                    <TouchableOpacity
+                      style={styles.radioButton}
+                      onPress={() =>
+                        setAddressForm({ ...addressForm, work_from_home: true })
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.radioCircle,
+                          {
+                            backgroundColor: addressForm.work_from_home
+                              ? "#007bff"
+                              : "transparent",
+                          },
+                        ]}
+                      />
+                      <Text style={styles.radioLabel}>Yes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.radioButton}
+                      onPress={() =>
+                        setAddressForm({ ...addressForm, work_from_home: false })
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.radioCircle,
+                          {
+                            backgroundColor: !addressForm.work_from_home
+                              ? "#007bff"
+                              : "transparent",
+                          },
+                        ]}
+                      />
+                      <Text style={styles.radioLabel}>No</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.stepButtons}>
+                  <Button
+                    title="Back"
+                    onPress={prevStep}
+                    buttonStyle={styles.backButton}
+                    titleStyle={styles.backButtonText}
+                  />
+                  <Button
+                    title="Continue"
+                    onPress={saveAddressInfo}
+                    buttonStyle={styles.continueButton}
+                    titleStyle={styles.continueButtonText}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Step 3: Income Source Selection */}
+            {currentSetupStep === 3 && (
+              <View style={styles.formSection}>
+                <Text style={styles.stepTitle}>Choose Your Main Income</Text>
+                <Text style={styles.stepDescription}>
+                  We accept many different sources of income. Please choose your main income.
+                </Text>
+
+                <View style={styles.incomeSourceContainer}>
+                  {[
+                    {
+                      id: "employment",
+                      title: "Employment",
+                      description: "You are employed in a local company. Latest payslip required.",
+                      icon: "briefcase",
+                    },
+                    {
+                      id: "business",
+                      title: "Business",
+                      description: "You own and operate a business. Business registration and financial statements required.",
+                      icon: "storefront",
+                    },
+                    {
+                      id: "remittance",
+                      title: "Remittance",
+                      description: "You receive regular remittance from relatives abroad. Bank statements and/or remittance slips are required.",
+                      icon: "card",
+                    },
+                    {
+                      id: "freelance",
+                      title: "Freelance",
+                      description: "You earn from an online platform like Upwork, Grab, Online English Teacher.",
+                      icon: "laptop",
+                    },
+                  ].map((source) => (
+                    <TouchableOpacity
+                      key={source.id}
+                      style={[
+                        styles.incomeSourceCard,
+                        incomeForm.main_income_source === source.id &&
+                          styles.selectedIncomeCard,
+                      ]}
+                      onPress={() =>
+                        setIncomeForm({
+                          ...incomeForm,
+                          main_income_source: source.id,
+                        })
+                      }
+                    >
+                      <View style={styles.incomeSourceHeader}>
+                        <View style={styles.incomeSourceInfo}>
+                          <Ionicons
+                            name={source.icon as any}
+                            size={24}
+                            color={
+                              incomeForm.main_income_source === source.id
+                                ? "#007bff"
+                                : "#6c757d"
+                            }
+                          />
+                          <View style={styles.incomeSourceText}>
+                            <Text
+                              style={[
+                                styles.incomeSourceTitle,
+                                incomeForm.main_income_source === source.id &&
+                                  styles.selectedIncomeTitle,
+                              ]}
+                            >
+                              {source.title}
+                            </Text>
+                            <Text style={styles.incomeSourceDescription}>
+                              {source.description}
+                            </Text>
+                          </View>
+                        </View>
+                        <Ionicons
+                          name={
+                            incomeForm.main_income_source === source.id
+                              ? "checkmark-circle"
+                              : "add-circle"
+                          }
+                          size={24}
+                          color={
+                            incomeForm.main_income_source === source.id
+                              ? "#28a745"
+                              : "#007bff"
+                          }
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.stepButtons}>
+                  <Button
+                    title="Back"
+                    onPress={prevStep}
+                    buttonStyle={styles.backButton}
+                    titleStyle={styles.backButtonText}
+                  />
+                  <Button
+                    title="Continue"
+                    onPress={nextStep}
+                    buttonStyle={[
+                      styles.continueButton,
+                      !incomeForm.main_income_source ? { backgroundColor: "#e9ecef" } : null,
+                    ]}
+                    titleStyle={styles.continueButtonText}
+                    disabled={!incomeForm.main_income_source}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Step 4: Income Details */}
+            {currentSetupStep === 4 && (
+              <View style={styles.formSection}>
+                <Text style={styles.stepTitle}>Income Details</Text>
+                <Text style={styles.stepDescription}>
+                  Please provide details about your {incomeForm.main_income_source} income.
+                </Text>
+
+                {incomeForm.main_income_source === "business" && (
+                  <>
+                    <Input
+                      label="Business Name"
+                      value={incomeForm.business_name}
+                      onChangeText={(text) =>
+                        setIncomeForm({ ...incomeForm, business_name: text })
+                      }
+                      placeholder="Enter your business name"
+                      containerStyle={styles.inputContainer}
+                    />
+
+                    <View style={styles.dropdownContainer}>
+                      <Text style={styles.dropdownLabel}>Payout Frequency</Text>
+                      <TouchableOpacity style={styles.dropdownButton}>
+                        <Text style={styles.dropdownText}>
+                          {incomeForm.payout_frequency || "Select frequency"}
+                        </Text>
+                        <Ionicons name="chevron-down" size={20} color="#6c757d" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.dropdownContainer}>
+                      <Text style={styles.dropdownLabel}>
+                        Which days of the month do you get paid?
+                      </Text>
+                      <TouchableOpacity style={styles.dropdownButton}>
+                        <Text style={styles.dropdownText}>
+                          {incomeForm.payout_days || "Select payment days"}
+                        </Text>
+                        <Ionicons name="chevron-down" size={20} color="#6c757d" />
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+
+                {incomeForm.main_income_source === "employment" && (
+                  <>
+                    <Input
+                      label="Company Name"
+                      value={incomeForm.employment_company}
+                      onChangeText={(text) =>
+                        setIncomeForm({ ...incomeForm, employment_company: text })
+                      }
+                      placeholder="Enter your company name"
+                      containerStyle={styles.inputContainer}
+                    />
+
+                    <Input
+                      label="Position"
+                      value={incomeForm.employment_position}
+                      onChangeText={(text) =>
+                        setIncomeForm({ ...incomeForm, employment_position: text })
+                      }
+                      placeholder="Enter your position"
+                      containerStyle={styles.inputContainer}
+                    />
+                  </>
+                )}
+
+                <Input
+                  label="Monthly Income (₱)"
+                  value={incomeForm.monthly_income.toString()}
+                  onChangeText={(text) =>
+                    setIncomeForm({
+                      ...incomeForm,
+                      monthly_income: parseFloat(text) || 0,
+                    })
+                  }
+                  placeholder="Enter your monthly income"
+                  keyboardType="numeric"
+                  containerStyle={styles.inputContainer}
+                />
+
+                <View style={styles.stepButtons}>
+                  <Button
+                    title="Back"
+                    onPress={prevStep}
+                    buttonStyle={styles.backButton}
+                    titleStyle={styles.backButtonText}
+                  />
+                  <Button
+                    title="Complete Setup"
+                    onPress={saveIncomeInfo}
+                    buttonStyle={styles.continueButton}
+                    titleStyle={styles.continueButtonText}
+                  />
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -2490,15 +3144,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6c757d",
     fontWeight: "600",
-  },
-  dropdownContainer: {
-    marginBottom: 20,
-  },
-  dropdownLabel: {
-    fontSize: 16,
-    color: "#212529",
-    fontWeight: "500",
-    marginBottom: 10,
   },
   dropdownOptions: {
     flexDirection: "row",
@@ -2928,5 +3573,190 @@ const styles = StyleSheet.create({
   idDocumentNote: {
     fontSize: 12,
     color: "#6c757d",
+  },
+  // Profile Setup Styles
+  profileCompletionBanner: {
+    marginTop: 12,
+    backgroundColor: "#fff3cd",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ffeaa7",
+  },
+  profileCompletionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+  },
+  profileCompletionText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#856404",
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  progressContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  progressStep: {
+    flex: 1,
+    alignItems: "center",
+  },
+  progressCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#e9ecef",
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  stepTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 8,
+  },
+  stepDescription: {
+    fontSize: 16,
+    color: "#6c757d",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  workFromHomeSection: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  workFromHomeQuestion: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 12,
+  },
+  radioButtonContainer: {
+    flexDirection: "row",
+    gap: 24,
+  },
+  radioButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#007bff",
+    marginRight: 8,
+  },
+  radioLabel: {
+    fontSize: 16,
+    color: "#212529",
+  },
+  stepButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 32,
+    gap: 16,
+  },
+  continueButton: {
+    backgroundColor: "#dc3545",
+    borderRadius: 8,
+    paddingVertical: 12,
+    flex: 1,
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  backButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#6c757d",
+    borderRadius: 8,
+    paddingVertical: 12,
+    flex: 1,
+  },
+  backButtonText: {
+    color: "#6c757d",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  incomeSourceContainer: {
+    gap: 16,
+  },
+  incomeSourceCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  selectedIncomeCard: {
+    borderColor: "#007bff",
+    backgroundColor: "#f8f9ff",
+  },
+  incomeSourceHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  incomeSourceInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  incomeSourceText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  incomeSourceTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  selectedIncomeTitle: {
+    color: "#007bff",
+  },
+  incomeSourceDescription: {
+    fontSize: 14,
+    color: "#6c757d",
+    lineHeight: 18,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdownLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 8,
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: "#212529",
   },
 });
