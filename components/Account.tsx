@@ -63,6 +63,15 @@ export default function Account({ session }: { session: any }) {
   const [loanHistoryModalVisible, setLoanHistoryModalVisible] = useState(false);
   const [loanHistory, setLoanHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [settings, setSettings] = useState({
+    notifications: true,
+    emailUpdates: true,
+    smsAlerts: false,
+    biometricLogin: false,
+    darkMode: false,
+    autoLogout: true,
+  });
 
   useEffect(() => {
     if (session?.user) {
@@ -702,6 +711,60 @@ export default function Account({ session }: { session: any }) {
     }
   };
 
+  const openAccountSettings = () => {
+    setSettingsModalVisible(true);
+  };
+
+  const closeSettingsModal = () => {
+    setSettingsModalVisible(false);
+  };
+
+  const toggleSetting = (settingKey: string) => {
+    setSettings(prev => ({
+      ...prev,
+      [settingKey]: !prev[settingKey as keyof typeof prev]
+    }));
+  };
+
+  const saveSettings = async () => {
+    try {
+      // Here you would typically save settings to your backend
+      // For now, we'll just show a success message
+      Alert.alert("Success", "Settings saved successfully!");
+      closeSettingsModal();
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      Alert.alert("Error", "Failed to save settings. Please try again.");
+    }
+  };
+
+  const resetSettings = () => {
+    Alert.alert(
+      "Reset Settings",
+      "Are you sure you want to reset all settings to default?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: () => {
+            setSettings({
+              notifications: true,
+              emailUpdates: true,
+              smsAlerts: false,
+              biometricLogin: false,
+              darkMode: false,
+              autoLogout: true,
+            });
+          },
+        },
+      ]
+    );
+  };
+
   const calculateLoanDetailsForCalculator = (amount: number, termMonths: number, interestRate: number) => {
     if (amount <= 0 || termMonths <= 0 || interestRate < 0) {
       return {
@@ -886,7 +949,7 @@ export default function Account({ session }: { session: any }) {
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={openAccountSettings}>
           <Ionicons name="settings" size={24} color="#6c757d" />
           <Text style={styles.actionText}>Account Settings</Text>
           <Ionicons name="chevron-forward" size={20} color="#666" />
@@ -1682,6 +1745,199 @@ export default function Account({ session }: { session: any }) {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Account Settings Modal */}
+      <Modal
+        visible={settingsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeSettingsModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeSettingsModal}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text h4 style={styles.modalTitle}>
+              Account Settings
+            </Text>
+            <TouchableOpacity onPress={saveSettings}>
+              <Text style={styles.modalSaveButton}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.formSection}>
+              <Text style={styles.settingsDescription}>
+                Customize your eCredit experience and manage your account preferences.
+              </Text>
+
+              {/* Notifications Section */}
+              <View style={styles.settingsSection}>
+                <Text style={styles.sectionTitle}>Notifications</Text>
+                
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="notifications" size={20} color="#007bff" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Push Notifications</Text>
+                      <Text style={styles.settingDescription}>
+                        Receive notifications about loan updates and payments
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.notifications}
+                    onPress={() => toggleSetting('notifications')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="mail" size={20} color="#28a745" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Email Updates</Text>
+                      <Text style={styles.settingDescription}>
+                        Get important updates via email
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.emailUpdates}
+                    onPress={() => toggleSetting('emailUpdates')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="chatbubble" size={20} color="#ff9800" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>SMS Alerts</Text>
+                      <Text style={styles.settingDescription}>
+                        Receive SMS notifications for urgent matters
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.smsAlerts}
+                    onPress={() => toggleSetting('smsAlerts')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+              </View>
+
+              {/* Security Section */}
+              <View style={styles.settingsSection}>
+                <Text style={styles.sectionTitle}>Security</Text>
+                
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="finger-print" size={20} color="#dc3545" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Biometric Login</Text>
+                      <Text style={styles.settingDescription}>
+                        Use fingerprint or face recognition to log in
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.biometricLogin}
+                    onPress={() => toggleSetting('biometricLogin')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="time" size={20} color="#6c757d" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Auto Logout</Text>
+                      <Text style={styles.settingDescription}>
+                        Automatically log out after 15 minutes of inactivity
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.autoLogout}
+                    onPress={() => toggleSetting('autoLogout')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+              </View>
+
+              {/* Appearance Section */}
+              <View style={styles.settingsSection}>
+                <Text style={styles.sectionTitle}>Appearance</Text>
+                
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="moon" size={20} color="#6c757d" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Dark Mode</Text>
+                      <Text style={styles.settingDescription}>
+                        Switch to dark theme for better viewing in low light
+                      </Text>
+                    </View>
+                  </View>
+                  <CheckBox
+                    checked={settings.darkMode}
+                    onPress={() => toggleSetting('darkMode')}
+                    checkedColor="#007bff"
+                    uncheckedColor="#6c757d"
+                    size={20}
+                  />
+                </View>
+              </View>
+
+              {/* Account Actions */}
+              <View style={styles.settingsSection}>
+                <Text style={styles.sectionTitle}>Account Actions</Text>
+                
+                <TouchableOpacity style={styles.actionSettingItem} onPress={resetSettings}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="refresh" size={20} color="#ff9800" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingLabel}>Reset Settings</Text>
+                      <Text style={styles.settingDescription}>
+                        Reset all settings to default values
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#6c757d" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionSettingItem} onPress={handleLogout}>
+                  <View style={styles.settingInfo}>
+                    <Ionicons name="log-out" size={20} color="#dc3545" />
+                    <View style={styles.settingText}>
+                      <Text style={[styles.settingLabel, { color: "#dc3545" }]}>Sign Out</Text>
+                      <Text style={styles.settingDescription}>
+                        Sign out of your account
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#6c757d" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -2348,5 +2604,72 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     paddingHorizontal: 20,
+  },
+  // Account Settings Styles
+  settingsDescription: {
+    fontSize: 14,
+    color: "#6c757d",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  settingsSection: {
+    marginBottom: 30,
+  },
+  settingItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  actionSettingItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  settingInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  settingText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  settingLabel: {
+    fontSize: 16,
+    color: "#212529",
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  settingDescription: {
+    fontSize: 12,
+    color: "#6c757d",
+    lineHeight: 16,
   },
 });
