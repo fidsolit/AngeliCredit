@@ -355,10 +355,23 @@ export default function AdminDashboard({ session }: { session: any }) {
 
       if (error) {
         console.error('Supabase error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
       console.log('Update successful:', data);
+      
+      // Check if any rows were actually updated
+      if (!data || data.length === 0) {
+        console.warn('No rows were updated - loan might not exist or no changes made');
+        Alert.alert('Warning', 'No changes were made. The loan might not exist or already has this status.');
+        return;
+      }
 
       // Log activity
       const loan = loans.find(l => l.id === loanId);

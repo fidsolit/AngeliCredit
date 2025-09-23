@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Text, Card } from '@rneui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { formatCurrency } from '../lib/utils';
+import { UserProfile } from '../lib/types';
 
 interface QuickStatsCardsProps {
+  profile: UserProfile;
   onCashLoanPress: () => void;
   onProductLoanPress: () => void;
+  onCompleteProfile: () => void;
 }
 
 export const QuickStatsCards: React.FC<QuickStatsCardsProps> = ({
