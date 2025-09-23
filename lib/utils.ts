@@ -157,3 +157,38 @@ export const validateLoanApplication = (application: any): { isValid: boolean; e
     errors,
   };
 };
+
+export const checkLoanEligibility = (profile: any): { 
+  canApply: boolean; 
+  requirements: string[]; 
+  missingRequirements: string[] 
+} => {
+  const requirements = [
+    'Complete profile information',
+    'Upload valid ID document',
+    'ID verification approved'
+  ];
+
+  const missingRequirements: string[] = [];
+
+  // Check if profile is complete
+  if (!profile.profile_completed) {
+    missingRequirements.push('Complete profile information');
+  }
+
+  // Check if ID document is uploaded
+  if (!profile.id_document_url) {
+    missingRequirements.push('Upload valid ID document');
+  }
+
+  // Check if ID is verified
+  if (profile.id_verification_status !== 'verified') {
+    missingRequirements.push('ID verification approved');
+  }
+
+  return {
+    canApply: missingRequirements.length === 0,
+    requirements,
+    missingRequirements,
+  };
+};
