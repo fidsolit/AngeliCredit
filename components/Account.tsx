@@ -3954,7 +3954,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   continueButton: {
-    backgroundColor: "#dc3545",
+    backgroundColor: "#ff751f",
     borderRadius: 8,
     paddingVertical: 12,
     flex: 1,

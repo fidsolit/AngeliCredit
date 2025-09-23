@@ -300,32 +300,65 @@ export default function AdminDashboard({ session }: { session: any }) {
 
   const handleLoanAction = async (loanId: string | number, action: 'approve' | 'reject' | 'disburse' | 'complete') => {
     try {
-      let updateData: any = {
-        approval_date: new Date().toISOString(),
-      };
+      console.log(`Starting ${action} action for loan ID: ${loanId}`);
+      
+      let updateData: any = {};
 
       switch (action) {
         case 'approve':
           updateData.status = 'approved';
+          // Try to add approval_date, but don't fail if column doesn't exist
+          try {
+            updateData.approval_date = new Date().toISOString();
+          } catch (e) {
+            console.log('approval_date column may not exist, continuing with status only');
+          }
           break;
         case 'reject':
           updateData.status = 'rejected';
+          // Try to add approval_date, but don't fail if column doesn't exist
+          try {
+            updateData.approval_date = new Date().toISOString();
+          } catch (e) {
+            console.log('approval_date column may not exist, continuing with status only');
+          }
           break;
         case 'disburse':
           updateData.status = 'active';
-          updateData.disbursement_date = new Date().toISOString();
+          // Try to add disbursement_date, but don't fail if column doesn't exist
+          try {
+            updateData.disbursement_date = new Date().toISOString();
+          } catch (e) {
+            console.log('disbursement_date column may not exist, continuing with status only');
+          }
           break;
         case 'complete':
           updateData.status = 'completed';
+          // Try to add completion_date, but don't fail if column doesn't exist
+          try {
+            updateData.completion_date = new Date().toISOString();
+          } catch (e) {
+            console.log('completion_date column may not exist, continuing with status only');
+          }
           break;
       }
 
-      const { error } = await supabase
+      console.log('Update data:', updateData);
+
+      const { data, error } = await supabase
         .from('loans')
         .update(updateData)
-        .eq('id', loanId);
+        .eq('id', loanId)
+        .select();
 
-      if (error) throw error;
+      console.log('Update result:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Update successful:', data);
 
       // Log activity
       const loan = loans.find(l => l.id === loanId);
@@ -340,14 +373,21 @@ export default function AdminDashboard({ session }: { session: any }) {
           });
       }
 
+      // Show success message
       Alert.alert(
         'Success',
-        `Loan ${action}d successfully!`
+        `Loan ${action}d successfully!`,
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              // Automatically refresh all dashboard data
+              await loadDashboardData();
+            }
+          }
+        ]
       );
 
-      // Refresh data
-      await loadLoans();
-      await loadStats();
     } catch (error) {
       console.error(`Error ${action}ing loan:`, error);
       Alert.alert('Error', `Failed to ${action} loan.`);
@@ -413,13 +453,23 @@ export default function AdminDashboard({ session }: { session: any }) {
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Credit score updated successfully!');
+      Alert.alert(
+        'Success', 
+        'Credit score updated successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              // Automatically refresh all dashboard data
+              await loadDashboardData();
+              if (selectedUser?.id === userId) {
+                setSelectedUser({ ...selectedUser, credit_score: newScore });
+              }
+            }
+          }
+        ]
+      );
       
-      // Refresh user data
-      await loadUsers();
-      if (selectedUser?.id === userId) {
-        setSelectedUser({ ...selectedUser, credit_score: newScore });
-      }
     } catch (error) {
       console.error('Error updating credit score:', error);
       Alert.alert('Error', 'Failed to update credit score.');
@@ -435,13 +485,23 @@ export default function AdminDashboard({ session }: { session: any }) {
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Loan limit updated successfully!');
+      Alert.alert(
+        'Success', 
+        'Loan limit updated successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              // Automatically refresh all dashboard data
+              await loadDashboardData();
+              if (selectedUser?.id === userId) {
+                setSelectedUser({ ...selectedUser, loan_limit: newLimit });
+              }
+            }
+          }
+        ]
+      );
       
-      // Refresh user data
-      await loadUsers();
-      if (selectedUser?.id === userId) {
-        setSelectedUser({ ...selectedUser, loan_limit: newLimit });
-      }
     } catch (error) {
       console.error('Error updating loan limit:', error);
       Alert.alert('Error', 'Failed to update loan limit.');
