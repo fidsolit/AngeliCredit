@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  Animated,
+  Easing,
 } from "react-native";
 import { Button, Text, Card, Avatar, Divider, Input, CheckBox } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
@@ -106,6 +108,15 @@ export default function Account({ session }: { session: any }) {
   const [profileEditModalVisible, setProfileEditModalVisible] = useState(false);
   const [currentSetupStep, setCurrentSetupStep] = useState(1);
   const [activeTab, setActiveTab] = useState<'home' | 'loan' | 'history' | 'calculator' | 'settings'>('home');
+  
+  // Animation values
+  const profileMenuAnimation = useState(new Animated.Value(0))[0];
+  const profileMenuOpacity = useState(new Animated.Value(0))[0];
+  const chevronRotation = useState(new Animated.Value(0))[0];
+  const profileSectionScale = useState(new Animated.Value(1))[0];
+  const menuItem1Animation = useState(new Animated.Value(0))[0];
+  const menuItem2Animation = useState(new Animated.Value(0))[0];
+  
   const [addressForm, setAddressForm] = useState({
     house_number: "",
     province: "",
@@ -569,8 +580,104 @@ export default function Account({ session }: { session: any }) {
     }
   };
 
+  const handleProfilePressIn = () => {
+    Animated.spring(profileSectionScale, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const handleProfilePressOut = () => {
+    Animated.spring(profileSectionScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
   const toggleProfileMenu = () => {
-    setProfileMenuVisible(!profileMenuVisible);
+    const isOpening = !profileMenuVisible;
+    setProfileMenuVisible(isOpening);
+
+    if (isOpening) {
+      // Animate menu opening
+      Animated.parallel([
+        Animated.timing(profileMenuAnimation, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.timing(profileMenuOpacity, {
+          toValue: 1,
+          duration: 250,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
+        }),
+        Animated.timing(chevronRotation, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Staggered animation for menu items
+        Animated.stagger(100, [
+          Animated.timing(menuItem1Animation, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(menuItem2Animation, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    } else {
+      // Animate menu closing
+      Animated.parallel([
+        Animated.timing(menuItem1Animation, {
+          toValue: 0,
+          duration: 150,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(menuItem2Animation, {
+          toValue: 0,
+          duration: 150,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        Animated.parallel([
+          Animated.timing(profileMenuAnimation, {
+            toValue: 0,
+            duration: 250,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(profileMenuOpacity, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: false,
+          }),
+          Animated.timing(chevronRotation, {
+            toValue: 0,
+            duration: 250,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -1321,10 +1428,18 @@ export default function Account({ session }: { session: any }) {
       >
       {/* Header Section */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.profileSection}
-          onPress={toggleProfileMenu}
+        <Animated.View
+          style={{
+            transform: [{ scale: profileSectionScale }],
+          }}
         >
+          <TouchableOpacity
+            style={styles.profileSection}
+            onPress={toggleProfileMenu}
+            onPressIn={handleProfilePressIn}
+            onPressOut={handleProfilePressOut}
+            activeOpacity={0.8}
+          >
           <Avatar
             size={80}
             rounded
@@ -1382,30 +1497,93 @@ export default function Account({ session }: { session: any }) {
               <Ionicons name="create-outline" size={20} color="#007bff" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuButton}>
-              <Ionicons
-                name={profileMenuVisible ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#6c757d"
-              />
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: chevronRotation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '180deg'],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color="#6c757d"
+                />
+              </Animated.View>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+        </Animated.View>
 
         {/* Profile Menu */}
         {profileMenuVisible && (
-          <View style={styles.profileMenu}>
-            <TouchableOpacity style={styles.menuItem} onPress={openProfileEdit}>
-              <Ionicons name="person-outline" size={20} color="#6c757d" />
-              <Text style={styles.menuItemText}>Edit Profile</Text>
-            </TouchableOpacity>
+          <Animated.View 
+            style={[
+              styles.profileMenu,
+              {
+                opacity: profileMenuOpacity,
+                transform: [
+                  {
+                    translateY: profileMenuAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, 0],
+                    }),
+                  },
+                  {
+                    scale: profileMenuAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Animated.View
+              style={{
+                opacity: menuItem1Animation,
+                transform: [
+                  {
+                    translateX: menuItem1Animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <TouchableOpacity style={styles.menuItem} onPress={openProfileEdit}>
+                <Ionicons name="person-outline" size={20} color="#6c757d" />
+                <Text style={styles.menuItemText}>Edit Profile</Text>
+              </TouchableOpacity>
+            </Animated.View>
 
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={20} color="#dc3545" />
-              <Text style={[styles.menuItemText, { color: "#dc3545" }]}>
-                Sign Out
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <Animated.View
+              style={{
+                opacity: menuItem2Animation,
+                transform: [
+                  {
+                    translateX: menuItem2Animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#dc3545" />
+                <Text style={[styles.menuItemText, { color: "#dc3545" }]}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
         )}
       </View>
 
