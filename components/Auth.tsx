@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Input, Button, Text } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { z } from "zod";
-import { useTheme } from "../lib/ThemeContext";
+import { useSimpleTheme } from "../lib/ThemeContextSimple";
 
 // Zod schemas for input validation
 const signInSchema = z.object({
@@ -51,7 +51,7 @@ const signUpSchema = z
   });
 
 export default function Auth({ navigation }: { navigation: any }) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useSimpleTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -133,12 +133,7 @@ export default function Auth({ navigation }: { navigation: any }) {
     outputRange: [0, 1], // Fade in Sign Up when toggling to Sign Up
   });
 
-  const themeColors = {
-    background: isDark ? '#121212' : '#f8f9fa',
-    surface: isDark ? '#1e1e1e' : '#ffffff',
-    text: isDark ? '#ffffff' : '#212529',
-    textSecondary: isDark ? '#adb5bd' : '#6c757d',
-  };
+  const themeColors = colors;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>

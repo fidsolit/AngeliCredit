@@ -4,7 +4,7 @@ import { Text, Button, Input, CheckBox } from '@rneui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { BasicInfoForm, AddressForm, IncomeForm } from '../lib/types';
-import { useTheme } from '../lib/ThemeContext';
+import { useSimpleTheme } from '../lib/ThemeContextSimple';
 
 interface ProfileEditModalProps {
   visible: boolean;
@@ -19,7 +19,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   onUpdate,
   userProfile,
 }) => {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useSimpleTheme();
   const [basicInfo, setBasicInfo] = useState<BasicInfoForm>({
     full_name: '',
     phone: '',
@@ -191,13 +191,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 
   if (!visible) return null;
 
-  const themeColors = {
-    background: isDark ? '#121212' : '#f8f9fa',
-    surface: isDark ? '#1e1e1e' : '#ffffff',
-    text: isDark ? '#ffffff' : '#212529',
-    textSecondary: isDark ? '#adb5bd' : '#6c757d',
-    border: isDark ? '#3d3d3d' : '#e9ecef',
-  };
+  const themeColors = colors;
 
   return (
     <View style={styles.overlay}>

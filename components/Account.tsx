@@ -15,7 +15,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { ProfileSetupModal } from "./ProfileSetupModal";
 import { ProfileEditModal } from "./ProfileEditModal";
-import { useTheme } from "../lib/ThemeContext";
+import { BottomNavigation } from "./BottomNavigation";
+import { useSimpleTheme } from "../lib/ThemeContextSimple";
 
 interface UserProfile {
   id: string;
@@ -59,21 +60,12 @@ interface ActivityItem {
 }
 
 export default function Account({ session }: { session: any }) {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, colors } = useSimpleTheme();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get theme-aware colors
-  const getThemeColors = () => ({
-    background: isDark ? '#121212' : '#f8f9fa',
-    surface: isDark ? '#1e1e1e' : '#ffffff',
-    card: isDark ? '#2d2d2d' : '#ffffff',
-    text: isDark ? '#ffffff' : '#212529',
-    textSecondary: isDark ? '#adb5bd' : '#6c757d',
-    border: isDark ? '#3d3d3d' : '#e9ecef',
-    shadow: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-    primary: '#ff751f',
-  });
+  // Use theme colors directly
+  const themeColors = colors;
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingProfile, setEditingProfile] = useState<UserProfile | null>(
     null
@@ -113,6 +105,7 @@ export default function Account({ session }: { session: any }) {
   const [profileSetupModalVisible, setProfileSetupModalVisible] = useState(false);
   const [profileEditModalVisible, setProfileEditModalVisible] = useState(false);
   const [currentSetupStep, setCurrentSetupStep] = useState(1);
+  const [activeTab, setActiveTab] = useState<'home' | 'loan' | 'history' | 'calculator' | 'settings'>('home');
   const [addressForm, setAddressForm] = useState({
     house_number: "",
     province: "",
@@ -1318,10 +1311,14 @@ export default function Account({ session }: { session: any }) {
     );
   }
 
-  const themeColors = getThemeColors();
   
   return (
-    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Header Section */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -1415,7 +1412,10 @@ export default function Account({ session }: { session: any }) {
       {/* Quick Stats Cards */}
       <View style={styles.statsContainer}>
         <TouchableOpacity onPress={openLoanApplication} style={styles.statCardTouchable}>
-          <Card containerStyle={[styles.statCard, { backgroundColor: themeColors.card }]}>
+          <Card containerStyle={[styles.statCard, { 
+            backgroundColor: themeColors.surface,
+            shadowColor: themeColors.shadow,
+          }]}>
             <View style={styles.statItem} >
               <Ionicons name="cash" size={24} color="#28a745" />
               <Text style={styles.statLabel}>Cash Loan</Text>
@@ -1441,7 +1441,10 @@ export default function Account({ session }: { session: any }) {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Product Loan will be available soon!")} style={styles.statCardTouchable}>
-          <Card containerStyle={[styles.statCard, { backgroundColor: themeColors.card }]}>
+          <Card containerStyle={[styles.statCard, { 
+            backgroundColor: themeColors.surface,
+            shadowColor: themeColors.shadow,
+          }]}>
             <View style={styles.statItem}>
               <Ionicons name="cube" size={24} color="#ff9800" />
               <Text style={styles.statLabel}>Product Loan</Text>
@@ -1454,46 +1457,16 @@ export default function Account({ session }: { session: any }) {
         </TouchableOpacity>
       </View>
 
-      {/* Quick Actions */}
-      <View style={styles.actionsContainer}>
-        <Text h4 style={styles.sectionTitle}>
-          Quick Actions
-        </Text>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={openLoanApplication}
-        >
-          <Ionicons name="add-circle" size={24} color="#007bff" />
-          <Text style={styles.actionText}>Apply for Loan</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={openLoanHistory}>
-          <Ionicons name="document-text" size={24} color="#28a745" />
-          <Text style={styles.actionText}>View Loan History</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={openLoanCalculator}>
-          <Ionicons name="calculator" size={24} color="#ff9800" />
-          <Text style={styles.actionText}>Loan Calculator</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={openAccountSettings}>
-          <Ionicons name="settings" size={24} color="#6c757d" />
-          <Text style={styles.actionText}>Account Settings</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
 
       {/* Recent Activity */}
       <View style={styles.activityContainer}>
         <Text h4 style={[styles.sectionTitle, { color: themeColors.text }]}>
           Recent Activity
         </Text>
-        <Card containerStyle={[styles.activityCard, { backgroundColor: themeColors.card }]}>
+        <Card containerStyle={[styles.activityCard, { 
+          backgroundColor: themeColors.surface,
+          shadowColor: themeColors.shadow,
+        }]}>
           {activitiesLoading ? (
             <View style={styles.loadingActivity}>
               <Text style={styles.loadingText}>Loading activities...</Text>
@@ -3121,13 +3094,42 @@ export default function Account({ session }: { session: any }) {
         onUpdate={handleProfileUpdate}
         userProfile={userProfile}
       />
-    </ScrollView>
+
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <BottomNavigation
+        onApplyLoan={() => {
+          setActiveTab('loan');
+          openLoanApplication();
+        }}
+        onViewHistory={() => {
+          setActiveTab('history');
+          openLoanHistory();
+        }}
+        onCalculator={() => {
+          setActiveTab('calculator');
+          openLoanCalculator();
+        }}
+        onSettings={() => {
+          setActiveTab('settings');
+          openAccountSettings();
+        }}
+        activeTab={activeTab}
+      />
+    </View>
   );
 }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Space for bottom navigation
   },
   loadingContainer: {
     flex: 1,
@@ -3181,7 +3183,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     paddingHorizontal: 20,
-    marginTop: -15,
+    marginTop: -2,
     marginBottom: 20,
     gap: 15,
   },
@@ -3196,11 +3198,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
     borderWidth: 0,
   },
   statItem: {
@@ -3222,37 +3224,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500",
   },
-  actionsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
   sectionTitle: {
     color: "#212529",
     fontWeight: "600",
     marginBottom: 15,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  actionText: {
-    flex: 1,
-    marginLeft: 15,
-    fontSize: 16,
-    color: "#212529",
-    fontWeight: "500",
   },
   activityContainer: {
     paddingHorizontal: 20,
@@ -3264,11 +3239,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
     borderWidth: 0,
   },
   activityItem: {
@@ -3929,7 +3904,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: "#fff3cd",
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: "#ffeaa7",
   },
   profileCompletionContent: {

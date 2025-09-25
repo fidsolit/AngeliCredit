@@ -8,6 +8,8 @@ import { Session } from "@supabase/supabase-js";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "./lib/ThemeContext";
 import { StatusBar } from "expo-status-bar";
+import { SimpleThemeProvider } from "./lib/ThemeContextSimple";
+
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -60,7 +62,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
+ <SimpleThemeProvider>
         <StatusBar style="auto" />
         <View style={{ flex: 1 }}>
           {session && session.user ? (
@@ -73,7 +75,7 @@ export default function App() {
             <Auth navigation={undefined} />
           )}
         </View>
-      </ThemeProvider>
+        </SimpleThemeProvider>
     </SafeAreaProvider>
   );
 }

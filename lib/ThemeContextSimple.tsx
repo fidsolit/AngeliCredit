@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createTheme, ThemeProvider as RNEUIThemeProvider } from '@rneui/themed';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -9,52 +8,40 @@ interface ThemeContextType {
   isDark: boolean;
   toggleTheme: () => void;
   setThemeMode: (mode: ThemeMode) => void;
+  colors: {
+    primary: string;
+    secondary: string;
+    success: string;
+    warning: string;
+    error: string;
+    background: string;
+    surface: string;
+    text: string;
+    textSecondary: string;
+    border: string;
+    shadow: string;
+  };
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Enhanced theme colors for better dark mode support
-const createAppTheme = (mode: 'light' | 'dark') => createTheme({
-  lightColors: {
-    primary: '#ff751f',
-    secondary: '#28a745',
-    success: '#28a745',
-    warning: '#ff9800',
-    error: '#dc3545',
-    background: '#f8f9fa',
-    surface: '#ffffff',
-    grey0: '#212529',
-    grey1: '#495057',
-    grey2: '#6c757d',
-    grey3: '#adb5bd',
-    grey4: '#ced4da',
-    grey5: '#e9ecef',
-    white: '#ffffff',
-    black: '#000000',
-  },
-  darkColors: {
-    primary: '#ff751f',
-    secondary: '#28a745',
-    success: '#28a745',
-    warning: '#ff9800',
-    error: '#dc3545',
-    background: '#121212',
-    surface: '#1e1e1e',
-    grey0: '#ffffff',
-    grey1: '#f8f9fa',
-    grey2: '#e9ecef',
-    grey3: '#adb5bd',
-    grey4: '#6c757d',
-    grey5: '#495057',
-    white: '#ffffff',
-    black: '#000000',
-  },
-  mode: mode,
-});
-
 const THEME_STORAGE_KEY = '@ecredit_theme_mode';
 
-export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const getColors = (isDark: boolean) => ({
+  primary: '#ff751f',
+  secondary: '#28a745',
+  success: '#28a745',
+  warning: '#ff9800',
+  error: '#dc3545',
+  background: isDark ? '#121212' : '#f8f9fa',
+  surface: isDark ? '#1e1e1e' : '#ffffff',
+  text: isDark ? '#ffffff' : '#212529',
+  textSecondary: isDark ? '#adb5bd' : '#6c757d',
+  border: isDark ? '#3d3d3d' : '#e9ecef',
+  shadow: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+});
+
+export const SimpleThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
   const [isDark, setIsDark] = useState(false);
 
@@ -110,44 +97,27 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setThemeMode(newMode);
   };
 
-  const currentTheme = createAppTheme(isDark ? 'dark' : 'light');
+  const colors = getColors(isDark);
 
   return (
-    <ThemeContext.Provider value={{ themeMode, isDark, toggleTheme, setThemeMode }}>
-      <RNEUIThemeProvider theme={currentTheme}>
-        {children}
-      </RNEUIThemeProvider>
+    <ThemeContext.Provider value={{ themeMode, isDark, toggleTheme, setThemeMode, colors }}>
+      {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = (): ThemeContextType => {
+export const useSimpleTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    console.warn('useTheme must be used within a ThemeProvider. Falling back to default values.');
+    console.warn('useSimpleTheme must be used within a SimpleThemeProvider. Falling back to default values.');
     // Return default values instead of throwing an error
     return {
       themeMode: 'light',
       isDark: false,
-      toggleTheme: () => console.warn('ThemeProvider not found'),
-      setThemeMode: () => console.warn('ThemeProvider not found'),
+      toggleTheme: () => console.warn('SimpleThemeProvider not found'),
+      setThemeMode: () => console.warn('SimpleThemeProvider not found'),
+      colors: getColors(false),
     };
   }
   return context;
 };
-
-// Export theme colors for direct use in components
-export const getThemeColors = (isDark: boolean) => ({
-  primary: '#ff751f',
-  secondary: '#28a745',
-  success: '#28a745',
-  warning: '#ff9800',
-  error: '#dc3545',
-  background: isDark ? '#121212' : '#f8f9fa',
-  surface: isDark ? '#1e1e1e' : '#ffffff',
-  card: isDark ? '#2d2d2d' : '#ffffff',
-  text: isDark ? '#ffffff' : '#212529',
-  textSecondary: isDark ? '#adb5bd' : '#6c757d',
-  border: isDark ? '#3d3d3d' : '#e9ecef',
-  shadow: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-});
