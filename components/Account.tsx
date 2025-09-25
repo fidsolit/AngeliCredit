@@ -13,6 +13,9 @@ import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import { ProfileSetupModal } from "./ProfileSetupModal";
+import { ProfileEditModal } from "./ProfileEditModal";
+import { useTheme } from "../lib/ThemeContext";
 
 interface UserProfile {
   id: string;
@@ -56,8 +59,21 @@ interface ActivityItem {
 }
 
 export default function Account({ session }: { session: any }) {
+  const { isDark, toggleTheme } = useTheme();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Get theme-aware colors
+  const getThemeColors = () => ({
+    background: isDark ? '#121212' : '#f8f9fa',
+    surface: isDark ? '#1e1e1e' : '#ffffff',
+    card: isDark ? '#2d2d2d' : '#ffffff',
+    text: isDark ? '#ffffff' : '#212529',
+    textSecondary: isDark ? '#adb5bd' : '#6c757d',
+    border: isDark ? '#3d3d3d' : '#e9ecef',
+    shadow: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+    primary: '#ff751f',
+  });
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingProfile, setEditingProfile] = useState<UserProfile | null>(
     null
@@ -91,11 +107,11 @@ export default function Account({ session }: { session: any }) {
     emailUpdates: true,
     smsAlerts: false,
     biometricLogin: false,
-    darkMode: false,
     autoLogout: true,
   });
   const [idUploading, setIdUploading] = useState(false);
   const [profileSetupModalVisible, setProfileSetupModalVisible] = useState(false);
+  const [profileEditModalVisible, setProfileEditModalVisible] = useState(false);
   const [currentSetupStep, setCurrentSetupStep] = useState(1);
   const [addressForm, setAddressForm] = useState({
     house_number: "",
@@ -919,7 +935,6 @@ export default function Account({ session }: { session: any }) {
               emailUpdates: true,
               smsAlerts: false,
               biometricLogin: false,
-              darkMode: false,
               autoLogout: true,
             });
           },
@@ -963,6 +978,48 @@ export default function Account({ session }: { session: any }) {
   const closeProfileSetup = () => {
     setProfileSetupModalVisible(false);
     setCurrentSetupStep(1);
+  };
+
+  // Profile Edit Functions
+  const openProfileEdit = () => {
+    setProfileEditModalVisible(true);
+  };
+
+  const closeProfileEdit = () => {
+    setProfileEditModalVisible(false);
+  };
+
+  const handleProfileUpdate = () => {
+    fetchUserProfile(); // Refresh the profile data
+  };
+
+  // Check if profile is complete with all required fields
+  const isProfileComplete = (profile: UserProfile | null): boolean => {
+    if (!profile) return false;
+    
+    // Check basic info
+    if (!profile.full_name?.trim() || !profile.phone?.trim()) {
+      return false;
+    }
+    
+    // Check address info
+    if (!profile.house_number?.trim() || 
+        !profile.province?.trim() || 
+        !profile.city?.trim() || 
+        !profile.barangay?.trim() || 
+        !profile.postal_code?.trim()) {
+      return false;
+    }
+    
+    // Check income info
+    if (!profile.monthly_income || 
+        profile.monthly_income <= 0 || 
+        !profile.employment_company?.trim() || 
+        !profile.employment_position?.trim()) {
+      return false;
+    }
+    
+    return true;
   };
 
   const nextStep = () => {
@@ -1261,8 +1318,10 @@ export default function Account({ session }: { session: any }) {
     );
   }
 
+  const themeColors = getThemeColors();
+  
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -1299,7 +1358,7 @@ export default function Account({ session }: { session: any }) {
             </View>
             
             {/* Profile Completion Status */}
-            {!userProfile?.profile_completed ? (
+            {!isProfileComplete(userProfile) ? (
               <TouchableOpacity style={styles.profileCompletionBanner} onPress={openProfileSetup}>
                 <View style={styles.profileCompletionContent}>
                   <Ionicons name="person-add" size={16} color="#ff9800" />
@@ -1338,7 +1397,7 @@ export default function Account({ session }: { session: any }) {
         {/* Profile Menu */}
         {profileMenuVisible && (
           <View style={styles.profileMenu}>
-            <TouchableOpacity style={styles.menuItem} onPress={openEditModal}>
+            <TouchableOpacity style={styles.menuItem} onPress={openProfileEdit}>
               <Ionicons name="person-outline" size={20} color="#6c757d" />
               <Text style={styles.menuItemText}>Edit Profile</Text>
             </TouchableOpacity>
@@ -1356,7 +1415,7 @@ export default function Account({ session }: { session: any }) {
       {/* Quick Stats Cards */}
       <View style={styles.statsContainer}>
         <TouchableOpacity onPress={openLoanApplication} style={styles.statCardTouchable}>
-          <Card containerStyle={styles.statCard}>
+          <Card containerStyle={[styles.statCard, { backgroundColor: themeColors.card }]}>
             <View style={styles.statItem} >
               <Ionicons name="cash" size={24} color="#28a745" />
               <Text style={styles.statLabel}>Cash Loan</Text>
@@ -1382,7 +1441,7 @@ export default function Account({ session }: { session: any }) {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Product Loan will be available soon!")} style={styles.statCardTouchable}>
-          <Card containerStyle={styles.statCard}>
+          <Card containerStyle={[styles.statCard, { backgroundColor: themeColors.card }]}>
             <View style={styles.statItem}>
               <Ionicons name="cube" size={24} color="#ff9800" />
               <Text style={styles.statLabel}>Product Loan</Text>
@@ -1431,10 +1490,10 @@ export default function Account({ session }: { session: any }) {
 
       {/* Recent Activity */}
       <View style={styles.activityContainer}>
-        <Text h4 style={styles.sectionTitle}>
+        <Text h4 style={[styles.sectionTitle, { color: themeColors.text }]}>
           Recent Activity
         </Text>
-        <Card containerStyle={styles.activityCard}>
+        <Card containerStyle={[styles.activityCard, { backgroundColor: themeColors.card }]}>
           {activitiesLoading ? (
             <View style={styles.loadingActivity}>
               <Text style={styles.loadingText}>Loading activities...</Text>
@@ -2409,9 +2468,9 @@ export default function Account({ session }: { session: any }) {
                     </View>
                   </View>
                   <CheckBox
-                    checked={settings.darkMode}
-                    onPress={() => toggleSetting('darkMode')}
-                    checkedColor="#007bff"
+                    checked={isDark}
+                    onPress={toggleTheme}
+                    checkedColor="#ff751f"
                     uncheckedColor="#6c757d"
                     size={20}
                   />
@@ -3054,6 +3113,14 @@ export default function Account({ session }: { session: any }) {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        visible={profileEditModalVisible}
+        onClose={closeProfileEdit}
+        onUpdate={handleProfileUpdate}
+        userProfile={userProfile}
+      />
     </ScrollView>
   );
 }

@@ -5,9 +5,9 @@ import Account from "./components/Account";
 import AdminDashboard from "./components/AdminDashboard";
 import { View } from "react-native";
 import { Session } from "@supabase/supabase-js";
-import { ThemeProvider } from "@rneui/themed";
-import { theme } from "./lib/theme";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ThemeProvider } from "./lib/ThemeContext";
+import { StatusBar } from "expo-status-bar";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -60,7 +60,8 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider>
+        <StatusBar style="auto" />
         <View style={{ flex: 1 }}>
           {session && session.user ? (
             isAdmin ? (

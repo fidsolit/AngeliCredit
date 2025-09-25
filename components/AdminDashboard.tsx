@@ -12,6 +12,7 @@ import { Text, Card, Button, Avatar, Divider } from '@rneui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../lib/ThemeContext';
 
 interface Loan {
   id: string | number;
@@ -48,6 +49,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard({ session }: { session: any }) {
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'overview' | 'loans' | 'users'>('overview');
   const [loanFilter, setLoanFilter] = useState<'all' | 'pending' | 'approved' | 'active' | 'completed'>('all');
   const [loading, setLoading] = useState(true);

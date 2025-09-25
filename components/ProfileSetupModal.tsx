@@ -4,6 +4,7 @@ import { Text, Button, Input, CheckBox } from '@rneui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from './StatusBar';
 import { BasicInfoForm, AddressForm, IncomeForm } from '../lib/types';
+import { useTheme } from '../lib/ThemeContext';
 
 interface ProfileSetupModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
   onComplete,
   currentStep,
 }) => {
+  const { isDark } = useTheme();
   const [step, setStep] = useState(currentStep);
   const [basicInfo, setBasicInfo] = useState<BasicInfoForm>({
     full_name: '',
@@ -42,10 +44,56 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
     monthly_income: 0,
   });
 
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
   const stepTitles = ['Basic Info', 'Address', 'Income Details'];
 
+  const validateStep = (stepNumber: number): boolean => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (stepNumber === 1) {
+      if (!basicInfo.full_name?.trim()) {
+        newErrors.full_name = 'Full name is required';
+      }
+      if (!basicInfo.phone?.trim()) {
+        newErrors.phone = 'Phone number is required';
+      } else if (!/^[0-9+\-\s()]+$/.test(basicInfo.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
+    } else if (stepNumber === 2) {
+      if (!address.house_number?.trim()) {
+        newErrors.house_number = 'House number is required';
+      }
+      if (!address.province?.trim()) {
+        newErrors.province = 'Province is required';
+      }
+      if (!address.city?.trim()) {
+        newErrors.city = 'City is required';
+      }
+      if (!address.barangay?.trim()) {
+        newErrors.barangay = 'Barangay is required';
+      }
+      if (!address.postal_code?.trim()) {
+        newErrors.postal_code = 'Postal code is required';
+      }
+    } else if (stepNumber === 3) {
+      if (!income.monthly_income || income.monthly_income <= 0) {
+        newErrors.monthly_income = 'Monthly income is required and must be greater than 0';
+      }
+      if (!income.employment_company?.trim()) {
+        newErrors.employment_company = 'Employment company is required';
+      }
+      if (!income.employment_position?.trim()) {
+        newErrors.employment_position = 'Position is required';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const nextStep = () => {
-    if (step < 3) {
+    if (validateStep(step) && step < 3) {
       setStep(step + 1);
     }
   };
@@ -57,8 +105,10 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
   };
 
   const handleComplete = () => {
-    onComplete({ basicInfo, address, income });
-    onClose();
+    if (validateStep(3)) {
+      onComplete({ basicInfo, address, income });
+      onClose();
+    }
   };
 
   const renderStep1 = () => (
@@ -69,20 +119,34 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
       </Text>
       
       <Input
-        label="Full Name"
+        label="Full Name *"
         value={basicInfo.full_name}
-        onChangeText={(text) => setBasicInfo({ ...basicInfo, full_name: text })}
+        onChangeText={(text) => {
+          setBasicInfo({ ...basicInfo, full_name: text });
+          if (errors.full_name) {
+            setErrors({ ...errors, full_name: '' });
+          }
+        }}
         placeholder="Enter your full name"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.full_name}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Phone Number"
+        label="Phone Number *"
         value={basicInfo.phone}
-        onChangeText={(text) => setBasicInfo({ ...basicInfo, phone: text })}
+        onChangeText={(text) => {
+          setBasicInfo({ ...basicInfo, phone: text });
+          if (errors.phone) {
+            setErrors({ ...errors, phone: '' });
+          }
+        }}
         placeholder="Enter your phone number"
         keyboardType="phone-pad"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.phone}
+        errorStyle={styles.errorText}
       />
     </View>
   );
@@ -95,43 +159,78 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
       </Text>
       
       <Input
-        label="House Number"
+        label="House Number *"
         value={address.house_number}
-        onChangeText={(text) => setAddress({ ...address, house_number: text })}
+        onChangeText={(text) => {
+          setAddress({ ...address, house_number: text });
+          if (errors.house_number) {
+            setErrors({ ...errors, house_number: '' });
+          }
+        }}
         placeholder="Enter house number"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.house_number}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Province"
+        label="Province *"
         value={address.province}
-        onChangeText={(text) => setAddress({ ...address, province: text })}
+        onChangeText={(text) => {
+          setAddress({ ...address, province: text });
+          if (errors.province) {
+            setErrors({ ...errors, province: '' });
+          }
+        }}
         placeholder="Enter province"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.province}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="City"
+        label="City *"
         value={address.city}
-        onChangeText={(text) => setAddress({ ...address, city: text })}
+        onChangeText={(text) => {
+          setAddress({ ...address, city: text });
+          if (errors.city) {
+            setErrors({ ...errors, city: '' });
+          }
+        }}
         placeholder="Enter city"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.city}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Barangay"
+        label="Barangay *"
         value={address.barangay}
-        onChangeText={(text) => setAddress({ ...address, barangay: text })}
+        onChangeText={(text) => {
+          setAddress({ ...address, barangay: text });
+          if (errors.barangay) {
+            setErrors({ ...errors, barangay: '' });
+          }
+        }}
         placeholder="Enter barangay"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.barangay}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Postal Code"
+        label="Postal Code *"
         value={address.postal_code}
-        onChangeText={(text) => setAddress({ ...address, postal_code: text })}
+        onChangeText={(text) => {
+          setAddress({ ...address, postal_code: text });
+          if (errors.postal_code) {
+            setErrors({ ...errors, postal_code: '' });
+          }
+        }}
         placeholder="Enter postal code"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.postal_code}
+        errorStyle={styles.errorText}
       />
     </View>
   );
@@ -144,37 +243,66 @@ export const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({
       </Text>
       
       <Input
-        label="Monthly Income"
+        label="Monthly Income *"
         value={income.monthly_income.toString()}
-        onChangeText={(text) => setIncome({ ...income, monthly_income: parseFloat(text) || 0 })}
+        onChangeText={(text) => {
+          setIncome({ ...income, monthly_income: parseFloat(text) || 0 });
+          if (errors.monthly_income) {
+            setErrors({ ...errors, monthly_income: '' });
+          }
+        }}
         placeholder="Enter monthly income"
         keyboardType="numeric"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.monthly_income}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Employment Company"
+        label="Employment Company *"
         value={income.employment_company}
-        onChangeText={(text) => setIncome({ ...income, employment_company: text })}
+        onChangeText={(text) => {
+          setIncome({ ...income, employment_company: text });
+          if (errors.employment_company) {
+            setErrors({ ...errors, employment_company: '' });
+          }
+        }}
         placeholder="Enter company name"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.employment_company}
+        errorStyle={styles.errorText}
       />
       
       <Input
-        label="Position"
+        label="Position *"
         value={income.employment_position}
-        onChangeText={(text) => setIncome({ ...income, employment_position: text })}
+        onChangeText={(text) => {
+          setIncome({ ...income, employment_position: text });
+          if (errors.employment_position) {
+            setErrors({ ...errors, employment_position: '' });
+          }
+        }}
         placeholder="Enter your position"
         containerStyle={styles.inputContainer}
+        errorMessage={errors.employment_position}
+        errorStyle={styles.errorText}
       />
     </View>
   );
 
   if (!visible) return null;
 
+  const themeColors = {
+    background: isDark ? '#121212' : '#f8f9fa',
+    surface: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#ffffff' : '#212529',
+    textSecondary: isDark ? '#adb5bd' : '#6c757d',
+    border: isDark ? '#3d3d3d' : '#e9ecef',
+  };
+
   return (
     <View style={styles.overlay}>
-      <View style={styles.modal}>
+      <View style={[styles.modal, { backgroundColor: themeColors.surface }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -318,5 +446,10 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginRight: 8,
+  },
+  errorText: {
+    color: '#dc3545',
+    fontSize: 12,
+    marginTop: 5,
   },
 });
