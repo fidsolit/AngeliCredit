@@ -8,8 +8,63 @@ import { Session } from "@supabase/supabase-js";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "./lib/ThemeContext";
 import { StatusBar } from "expo-status-bar";
-import { SimpleThemeProvider } from "./lib/ThemeContextSimple";
+import { SimpleThemeProvider, useSimpleTheme } from "./lib/ThemeContextSimple";
+import { ThemeProvider as RNEUIThemeProvider } from "@rneui/themed";
 
+
+// Create a theme-aware RNEUI theme
+const createRNEUITheme = (isDark: boolean) => ({
+  lightColors: {
+    primary: '#ff751f',
+    secondary: '#6c757d',
+    success: '#28a745',
+    error: '#dc3545',
+    warning: '#ffc107',
+    info: '#17a2b8',
+    background: isDark ? '#121212' : '#f8f9fa',
+    surface: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#ffffff' : '#212529',
+    textSecondary: isDark ? '#adb5bd' : '#6c757d',
+    border: isDark ? '#3d3d3d' : '#e9ecef',
+  },
+  darkColors: {
+    primary: '#ff751f',
+    secondary: '#6c757d',
+    success: '#28a745',
+    error: '#dc3545',
+    warning: '#ffc107',
+    info: '#17a2b8',
+    background: isDark ? '#121212' : '#f8f9fa',
+    surface: isDark ? '#1e1e1e' : '#ffffff',
+    text: isDark ? '#ffffff' : '#212529',
+    textSecondary: isDark ? '#adb5bd' : '#6c757d',
+    border: isDark ? '#3d3d3d' : '#e9ecef',
+  },
+  mode: isDark ? 'dark' as const : 'light' as const,
+});
+
+// Wrapper component that provides RNEUI theme based on simple theme
+const AppContent = ({ session, isAdmin }: { session: Session | null; isAdmin: boolean }) => {
+  const { isDark } = useSimpleTheme();
+  const rneuiTheme = createRNEUITheme(isDark);
+
+  return (
+    <RNEUIThemeProvider theme={rneuiTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <View style={{ flex: 1 }}>
+        {session && session.user ? (
+          isAdmin ? (
+            <AdminDashboard key={session.user.id} session={session} />
+          ) : (
+            <Account key={session.user.id} session={session} />
+          )
+        ) : (
+          <Auth navigation={undefined} />
+        )}
+      </View>
+    </RNEUIThemeProvider>
+  );
+};
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -62,20 +117,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
- <SimpleThemeProvider>
-        <StatusBar style="auto" />
-        <View style={{ flex: 1 }}>
-          {session && session.user ? (
-            isAdmin ? (
-              <AdminDashboard key={session.user.id} session={session} />
-            ) : (
-              <Account key={session.user.id} session={session} />
-            )
-          ) : (
-            <Auth navigation={undefined} />
-          )}
-        </View>
-        </SimpleThemeProvider>
+      <SimpleThemeProvider>
+        <AppContent session={session} isAdmin={isAdmin} />
+      </SimpleThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSimpleTheme } from '../lib/ThemeContextSimple';
 
 interface StatusBarProps {
   currentStep: number;
@@ -13,6 +14,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   totalSteps,
   stepTitles = [],
 }) => {
+  const { colors } = useSimpleTheme();
   const renderStep = (stepNumber: number) => {
     const isCompleted = stepNumber < currentStep;
     const isCurrent = stepNumber === currentStep;
@@ -27,7 +29,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               styles.stepCircle,
               isCompleted && styles.stepCircleCompleted,
               isCurrent && styles.stepCircleCurrent,
-              isPending && styles.stepCirclePending,
+              isPending && { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
             {isCompleted ? (
@@ -37,7 +39,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 style={[
                   styles.stepNumber,
                   isCurrent && styles.stepNumberCurrent,
-                  isPending && styles.stepNumberPending,
+                  isPending && { color: colors.textSecondary },
                 ]}
               >
                 {stepNumber}
@@ -52,7 +54,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 styles.stepTitle,
                 isCompleted && styles.stepTitleCompleted,
                 isCurrent && styles.stepTitleCurrent,
-                isPending && styles.stepTitlePending,
+                isPending && { color: colors.textSecondary },
               ]}
             >
               {stepTitles[stepNumber - 1]}
@@ -66,7 +68,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 styles.descriptionLine,
                 isCompleted && styles.descriptionLineCompleted,
                 isCurrent && styles.descriptionLineCurrent,
-                isPending && styles.descriptionLinePending,
+                isPending && { backgroundColor: colors.border },
               ]}
             />
             <View
@@ -74,7 +76,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 styles.descriptionLine,
                 isCompleted && styles.descriptionLineCompleted,
                 isCurrent && styles.descriptionLineCurrent,
-                isPending && styles.descriptionLinePending,
+                isPending && { backgroundColor: colors.border },
               ]}
             />
           </View>
@@ -87,7 +89,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               styles.connectorLine,
               isCompleted && styles.connectorLineCompleted,
               isCurrent && styles.connectorLineCurrent,
-              isPending && styles.connectorLinePending,
+              isPending && { backgroundColor: colors.border },
             ]}
           />
         )}
@@ -96,7 +98,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.stepsContainer}>
         {Array.from({ length: totalSteps }, (_, index) => renderStep(index + 1))}
       </View>
@@ -138,19 +140,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff751f',
     borderColor: '#ff751f',
   },
-  stepCirclePending: {
-    backgroundColor: 'white',
-    borderColor: '#e0e0e0',
-  },
   stepNumber: {
     fontSize: 14,
     fontWeight: '600',
   },
   stepNumberCurrent: {
     color: 'white',
-  },
-  stepNumberPending: {
-    color: '#9e9e9e',
   },
   stepTitle: {
     fontSize: 12,
@@ -164,9 +159,6 @@ const styles = StyleSheet.create({
   },
   stepTitleCurrent: {
     color: '#ff751f',
-  },
-  stepTitlePending: {
-    color: '#9e9e9e',
   },
   stepDescription: {
     alignItems: 'center',
@@ -183,9 +175,6 @@ const styles = StyleSheet.create({
   descriptionLineCurrent: {
     backgroundColor: '#ff751f',
   },
-  descriptionLinePending: {
-    backgroundColor: '#e0e0e0',
-  },
   connectorLine: {
     width: 40,
     height: 2,
@@ -197,8 +186,5 @@ const styles = StyleSheet.create({
   },
   connectorLineCurrent: {
     backgroundColor: '#ff751f',
-  },
-  connectorLinePending: {
-    backgroundColor: '#e0e0e0',
   },
 });

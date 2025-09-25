@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSimpleTheme } from '../lib/ThemeContextSimple';
 
 interface SimpleStatusBarProps {
   currentStep: number;
@@ -13,6 +14,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
   totalSteps,
   stepTitles = [],
 }) => {
+  const { colors } = useSimpleTheme();
   const renderStep = (stepNumber: number) => {
     const isCompleted = stepNumber < currentStep;
     const isCurrent = stepNumber === currentStep;
@@ -26,7 +28,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
             styles.stepCircle,
             isCompleted && styles.stepCircleCompleted,
             isCurrent && styles.stepCircleCurrent,
-            isPending && styles.stepCirclePending,
+            isPending && { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
           {isCompleted ? (
@@ -36,7 +38,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
               style={[
                 styles.stepNumber,
                 isCurrent && styles.stepNumberCurrent,
-                isPending && styles.stepNumberPending,
+                isPending && { color: colors.textSecondary },
               ]}
             >
               {stepNumber}
@@ -51,7 +53,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
               styles.stepTitle,
               isCompleted && styles.stepTitleCompleted,
               isCurrent && styles.stepTitleCurrent,
-              isPending && styles.stepTitlePending,
+              isPending && { color: colors.textSecondary },
             ]}
           >
             {stepTitles[stepNumber - 1]}
@@ -65,7 +67,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
               styles.descriptionLine,
               isCompleted && styles.descriptionLineCompleted,
               isCurrent && styles.descriptionLineCurrent,
-              isPending && styles.descriptionLinePending,
+              isPending && { backgroundColor: colors.border },
             ]}
           />
           <View
@@ -73,7 +75,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
               styles.descriptionLine,
               isCompleted && styles.descriptionLineCompleted,
               isCurrent && styles.descriptionLineCurrent,
-              isPending && styles.descriptionLinePending,
+              isPending && { backgroundColor: colors.border },
             ]}
           />
         </View>
@@ -85,7 +87,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
               styles.connectorLine,
               isCompleted && styles.connectorLineCompleted,
               isCurrent && styles.connectorLineCurrent,
-              isPending && styles.connectorLinePending,
+              isPending && { backgroundColor: colors.border },
             ]}
           />
         )}
@@ -94,7 +96,7 @@ export const SimpleStatusBar: React.FC<SimpleStatusBarProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.stepsContainer}>
         {Array.from({ length: totalSteps }, (_, index) => renderStep(index + 1))}
       </View>
