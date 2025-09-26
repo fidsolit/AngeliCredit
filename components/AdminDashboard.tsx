@@ -699,6 +699,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                 loanFilter === filter.key && styles.activeFilterButton
               ]}
               onPress={() => setLoanFilter(filter.key as any)}
+              activeOpacity={1}
             >
               <Text style={[
                 styles.filterButtonText,
@@ -717,6 +718,7 @@ export default function AdminDashboard({ session }: { session: any }) {
           key={loan.id} 
           onPress={() => showLoanDetails(loan)}
           style={styles.loanCardTouchable}
+          activeOpacity={1}
         >
           <Card containerStyle={styles.loanCard}>
             <View style={styles.loanHeader}>
@@ -750,6 +752,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                     e.stopPropagation();
                     handleLoanAction(loan.id, 'approve');
                   }}
+                  activeOpacity={1}
                 >
                   <Ionicons name="checkmark" size={16} color="white" />
                   <Text style={styles.quickActionText}>Approve</Text>
@@ -760,6 +763,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                     e.stopPropagation();
                     handleLoanAction(loan.id, 'reject');
                   }}
+                  activeOpacity={1}
                 >
                   <Ionicons name="close" size={16} color="white" />
                   <Text style={styles.quickActionText}>Reject</Text>
@@ -775,6 +779,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                     e.stopPropagation();
                     handleLoanAction(loan.id, 'disburse');
                   }}
+                  activeOpacity={1}
                 >
                   <Ionicons name="cash" size={16} color="white" />
                   <Text style={styles.quickActionText}>Disburse</Text>
@@ -790,6 +795,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                     e.stopPropagation();
                     handleLoanAction(loan.id, 'complete');
                   }}
+                  activeOpacity={1}
                 >
                   <Ionicons name="checkmark-circle" size={16} color="white" />
                   <Text style={styles.quickActionText}>Complete</Text>
@@ -816,7 +822,7 @@ export default function AdminDashboard({ session }: { session: any }) {
             placeholderTextColor="#6c757d"
           />
           {userSearchQuery ? (
-            <TouchableOpacity onPress={() => setUserSearchQuery('')}>
+            <TouchableOpacity onPress={() => setUserSearchQuery('')} activeOpacity={1}>
               <Ionicons name="close-circle" size={20} color="#6c757d" />
             </TouchableOpacity>
           ) : null}
@@ -829,6 +835,7 @@ export default function AdminDashboard({ session }: { session: any }) {
           key={user.id} 
           onPress={() => showUserDetails(user)}
           style={styles.userCardTouchable}
+          activeOpacity={1}
         >
           <Card containerStyle={styles.userCard}>
             <View style={styles.userHeader}>
@@ -882,7 +889,7 @@ export default function AdminDashboard({ session }: { session: any }) {
       <View style={styles.header}>
         {/* <Text h3 style={styles.headerTitle}>Admin Dashboard</Text> */}
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={onRefresh} style={styles.headerButton}>
+          <TouchableOpacity onPress={onRefresh} style={styles.headerButton} activeOpacity={1}>
             <Ionicons name="refresh" size={24} color="#007bff" />
           </TouchableOpacity>
         </View>
@@ -893,6 +900,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
           onPress={() => setActiveTab('overview')}
+          activeOpacity={1}
         >
           <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
             Overview
@@ -901,6 +909,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'loans' && styles.activeTab]}
           onPress={() => setActiveTab('loans')}
+          activeOpacity={1}
         >
           <Text style={[styles.tabText, activeTab === 'loans' && styles.activeTabText]}>
             Loans
@@ -909,6 +918,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'users' && styles.activeTab]}
           onPress={() => setActiveTab('users')}
+          activeOpacity={1}
         >
           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
             Users
@@ -934,7 +944,7 @@ export default function AdminDashboard({ session }: { session: any }) {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Loan Details</Text>
-              <TouchableOpacity onPress={closeLoanDetails}>
+              <TouchableOpacity onPress={closeLoanDetails} activeOpacity={1}>
                 <Ionicons name="close" size={24} color="#6c757d" />
               </TouchableOpacity>
             </View>
@@ -1063,7 +1073,7 @@ export default function AdminDashboard({ session }: { session: any }) {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>User Profile</Text>
-              <TouchableOpacity onPress={closeUserDetails}>
+              <TouchableOpacity onPress={closeUserDetails} activeOpacity={1}>
                 <Ionicons name="close" size={24} color="#6c757d" />
               </TouchableOpacity>
             </View>
@@ -1123,6 +1133,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                           ]
                         );
                       }}
+                      activeOpacity={1}
                     >
                       <Ionicons name="create-outline" size={16} color="#007bff" />
                     </TouchableOpacity>
@@ -1156,6 +1167,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                           ]
                         );
                       }}
+                      activeOpacity={1}
                     >
                       <Ionicons name="create-outline" size={16} color="#007bff" />
                     </TouchableOpacity>
@@ -1230,6 +1242,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         <TouchableOpacity 
           onPress={handleLogout} 
           style={styles.bottomLogoutButton}
+          activeOpacity={1}
         >
           <View style={styles.bottomLogoutContent}>
             <Ionicons name="log-out-outline" size={24} color="#ffffff" />
@@ -1277,9 +1290,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   logoutButton: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: '#ff751f',
     borderWidth: 1,
-    borderColor: '#fed7d7',
+    borderColor: '#ff751f',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -1308,7 +1321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#ff751f',
   },
   tabText: {
     fontSize: 14,
@@ -1335,9 +1348,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 0,
-    shadowColor: '#000',
+    shadowColor: '#ff751f',// this is the color of the shadow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -1782,7 +1795,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e9ecef',
   },
   bottomLogoutButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#ff751f',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 12,

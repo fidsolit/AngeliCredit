@@ -2687,7 +2687,7 @@ export default function Account({ session }: { session: any }) {
                     styles.progressCircle,
                     {
                       backgroundColor:
-                        step <= currentSetupStep ? "#28a745" : "#e9ecef",
+                        step <= currentSetupStep ? "#ff751f" : "#e9ecef",
                     },
                   ]}
                 >

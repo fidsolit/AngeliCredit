@@ -66,7 +66,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Ionicons 
             name={hasIdDocument ? "checkmark-circle" : "document-outline"} 
             size={20} 
-            color={getIdVerificationColor(idVerificationStatus)} 
+            color={isProfileComplete ? "#ff751f" : getIdVerificationColor(idVerificationStatus)} 
           />
           <Text style={styles.idStatusText}>
             ID Verification: {getIdVerificationStatus(idVerificationStatus)}
