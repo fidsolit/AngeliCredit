@@ -135,19 +135,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff751f',
     borderColor: '#ff751f',
   },
-  stepCirclePending: {
-    backgroundColor: 'white',
-    borderColor: '#e0e0e0',
-  },
   stepNumber: {
     fontSize: 14,
     fontWeight: '600',
   },
   stepNumberCurrent: {
     color: 'white',
-  },
-  stepNumberPending: {
-    color: '#9e9e9e',
   },
   stepTitle: {
     fontSize: 12,
@@ -161,9 +154,6 @@ const styles = StyleSheet.create({
   },
   stepTitleCurrent: {
     color: '#ff751f',
-  },
-  stepTitlePending: {
-    color: '#9e9e9e',
   },
   stepDescription: {
     alignItems: 'center',
@@ -180,9 +170,6 @@ const styles = StyleSheet.create({
   descriptionLineCurrent: {
     backgroundColor: '#ff751f',
   },
-  descriptionLinePending: {
-    backgroundColor: '#e0e0e0',
-  },
   connectorLine: {
     width: 40,
     height: 2,
@@ -194,8 +181,5 @@ const styles = StyleSheet.create({
   },
   connectorLineCurrent: {
     backgroundColor: '#ff751f',
-  },
-  connectorLinePending: {
-    backgroundColor: '#e0e0e0',
   },
 });

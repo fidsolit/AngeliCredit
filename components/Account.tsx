@@ -1592,7 +1592,6 @@ export default function Account({ session }: { session: any }) {
         <TouchableOpacity onPress={openLoanApplication} style={styles.statCardTouchable}>
           <Card containerStyle={[styles.statCard, { 
             backgroundColor: themeColors.surface,
-            shadowColor: themeColors.shadow,
           }]}>
             <View style={styles.statItem} >
               <Ionicons name="cash" size={24} color="#28a745" />
@@ -1621,7 +1620,6 @@ export default function Account({ session }: { session: any }) {
         <TouchableOpacity onPress={() => Alert.alert("Coming Soon", "Product Loan will be available soon!")} style={styles.statCardTouchable}>
           <Card containerStyle={[styles.statCard, { 
             backgroundColor: themeColors.surface,
-            shadowColor: themeColors.shadow,
           }]}>
             <View style={styles.statItem}>
               <Ionicons name="cube" size={24} color="#ff9800" />
@@ -1643,7 +1641,6 @@ export default function Account({ session }: { session: any }) {
         </Text>
         <Card containerStyle={[styles.activityCard, { 
           backgroundColor: themeColors.surface,
-          shadowColor: themeColors.shadow,
         }]}>
           {activitiesLoading ? (
             <View style={styles.loadingActivity}>
@@ -3323,11 +3320,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   profileSection: {
     flexDirection: "row",
@@ -3373,15 +3370,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     minHeight: 140,
+    borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 0,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statItem: {
     alignItems: "center",
@@ -3414,15 +3411,15 @@ const styles = StyleSheet.create({
   activityCard: {
     borderRadius: 12,
     padding: 20,
+    borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 0,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   activityItem: {
     flexDirection: "row",
@@ -3458,14 +3455,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   modalContainer: {
     flex: 1,
@@ -3508,14 +3497,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     marginTop: 20,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   modalAvatar: {
     backgroundColor: "#e9ecef",
@@ -3544,14 +3525,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   inputContainer: {
     marginBottom: 10,
@@ -3575,11 +3548,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   profileMenu: {
     backgroundColor: "#ffffff",
@@ -3589,11 +3562,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   menuItem: {
     flexDirection: "row",
@@ -3613,14 +3586,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   loanPreviewTitle: {
     color: "#212529",
@@ -3855,14 +3820,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   historyHeader: {
     flexDirection: "row",
@@ -3952,14 +3909,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 8,
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   actionSettingItem: {
     flexDirection: "row",
@@ -3970,14 +3919,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 8,
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   settingInfo: {
     flexDirection: "row",

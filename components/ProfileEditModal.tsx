@@ -200,7 +200,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         <View style={styles.header}>
           <Text style={styles.title}>Edit Profile</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#6c757d" />
+            <Ionicons name="close" size={24} color="#ff751f" />
           </TouchableOpacity>
         </View>
 
@@ -448,10 +448,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '90%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   header: {
     flexDirection: 'row',
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#ff751f',
   },
   title: {
     fontSize: 20,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     color: '#212529',
     marginBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#ff751f',
     paddingBottom: 8,
   },
   inputContainer: {

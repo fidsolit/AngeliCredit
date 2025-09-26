@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: 16,
-    color: "#6c757d",
+    color: "#ff751f",
     textAlign: "center",
     marginBottom: 10,
   },
@@ -348,11 +348,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 30,
-    // shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 12,
-    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
   formTitle: {
     textAlign: "center",
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   formSubtitle: {
     textAlign: "center",
     marginBottom: 30,
-    color: "#6c757d",
+    color: "#ff751f",
     fontSize: 16,
   },
 
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   inputInner: {
     borderBottomWidth: 2,
-    borderBottomColor: "#e9ecef",
+    borderBottomColor: "#ff751f",
     paddingHorizontal: 10,
   },
 
@@ -388,10 +388,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
     shadowColor: "#ff751f",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   buttonText: {
     fontSize: 16,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   toggleText: {
     textAlign: "center",
     fontSize: 15,
-    color: "#6c757d",
+    color: "#ff751f",
     marginTop: 10,
   },
   toggleLink: {

@@ -100,7 +100,7 @@ export const QuickStatsCards: React.FC<QuickStatsCardsProps> = ({
               <Ionicons 
                 name="cash" 
                 size={24} 
-                color={canApplyForLoan ? "#28a745" : "#6c757d"} 
+                color={canApplyForLoan ? "#28a745" : "#ff751f"} 
               />
             </View>
             <View style={styles.cardInfo}>
@@ -132,7 +132,7 @@ export const QuickStatsCards: React.FC<QuickStatsCardsProps> = ({
             <Ionicons 
               name="chevron-forward" 
               size={20} 
-              color={canApplyForLoan ? "#6c757d" : "#9e9e9e"} 
+              color={canApplyForLoan ? "#ff751f" : "#ff9800"} 
             />
           </View>
         </Card>
@@ -152,7 +152,7 @@ export const QuickStatsCards: React.FC<QuickStatsCardsProps> = ({
               <Ionicons 
                 name="storefront" 
                 size={24} 
-                color={canApplyForLoan ? "#007bff" : "#6c757d"} 
+                color={canApplyForLoan ? "#007bff" : "#ff751f"} 
               />
             </View>
             <View style={styles.cardInfo}>
@@ -181,7 +181,7 @@ export const QuickStatsCards: React.FC<QuickStatsCardsProps> = ({
             <Ionicons 
               name="chevron-forward" 
               size={20} 
-              color={canApplyForLoan ? "#6c757d" : "#9e9e9e"} 
+              color={canApplyForLoan ? "#ff751f" : "#ff9800"} 
             />
           </View>
         </Card>
@@ -203,13 +203,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     margin: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
     borderWidth: 0,
     minHeight: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   cardContent: {
     flexDirection: 'row',
@@ -242,16 +242,16 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#ff751f',
   },
   disabledCard: {
     opacity: 0.6,
     backgroundColor: '#f8f9fa',
   },
   disabledIconContainer: {
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#fff3e0',
   },
   disabledText: {
-    color: '#6c757d',
+    color: '#ff751f',
   },
 });

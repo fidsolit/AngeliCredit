@@ -30,7 +30,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
       <View style={styles.container}>
         <Text h4 style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.emptyContainer}>
-          <Ionicons name="time-outline" size={48} color="#6c757d" />
+          <Ionicons name="time-outline" size={48} color="#ff751f" />
           <Text style={styles.emptyText}>No recent activity</Text>
           <Text style={styles.emptySubtext}>
             Your loan applications and transactions will appear here
@@ -110,12 +110,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginRight: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
     borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   activityContent: {
     flex: 1,
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
   },
   activityTime: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#ff751f',
   },
   activityDescription: {
     fontSize: 14,
-    color: '#6c757d',
+    color: '#ff751f',
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#6c757d',
+    color: '#ff751f',
     fontSize: 16,
   },
   emptyContainer: {
@@ -184,13 +184,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6c757d',
+    color: '#ff751f',
     marginTop: 12,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#6c757d',
+    color: '#ff751f',
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -1012,6 +1012,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                           closeLoanDetails();
                         }}
                         icon={{ name: 'check', type: 'material', color: 'white' }}
+                        activeOpacity={1}
                       />
                       <Button
                         title="Reject Loan"
@@ -1021,6 +1022,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                           closeLoanDetails();
                         }}
                         icon={{ name: 'close', type: 'material', color: 'white' }}
+                        activeOpacity={1}
                       />
                     </>
                   )}
@@ -1033,6 +1035,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                         closeLoanDetails();
                       }}
                       icon={{ name: 'cash', type: 'material', color: 'white' }}
+                      activeOpacity={1}
                     />
                   )}
                   {selectedLoan.status === 'active' && (
@@ -1044,6 +1047,7 @@ export default function AdminDashboard({ session }: { session: any }) {
                         closeLoanDetails();
                       }}
                       icon={{ name: 'check-circle', type: 'material', color: 'white' }}
+                      activeOpacity={1}
                     />
                   )}
                 </View>
@@ -1226,7 +1230,6 @@ export default function AdminDashboard({ session }: { session: any }) {
         <TouchableOpacity 
           onPress={handleLogout} 
           style={styles.bottomLogoutButton}
-          activeOpacity={0.7}
         >
           <View style={styles.bottomLogoutContent}>
             <Ionicons name="log-out-outline" size={24} color="#ffffff" />
@@ -1331,12 +1334,12 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 0,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statItem: {
     alignItems: 'center',
@@ -1369,12 +1372,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
+    borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 0,
+    shadowRadius: 4,
+    elevation: 3,
   },
   activityItem: {
     flexDirection: 'row',
@@ -1416,12 +1419,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 15,
+    borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 0,
+    shadowRadius: 4,
+    elevation: 3,
   },
   loanHeader: {
     flexDirection: 'row',
@@ -1467,12 +1470,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 15,
+    borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 0,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userHeader: {
     flexDirection: 'row',
@@ -1580,11 +1583,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '100%',
     maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1652,11 +1650,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   searchIcon: {
     marginRight: 10,
@@ -1795,14 +1788,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   bottomLogoutContent: {
     flexDirection: 'row',

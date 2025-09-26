@@ -36,8 +36,8 @@ const getColors = (isDark: boolean) => ({
   background: isDark ? '#121212' : '#f8f9fa',
   surface: isDark ? '#1e1e1e' : '#ffffff',
   text: isDark ? '#ffffff' : '#212529',
-  textSecondary: isDark ? '#adb5bd' : '#6c757d',
-  border: isDark ? '#3d3d3d' : '#e9ecef',
+  textSecondary: isDark ? '#ff9800' : '#ff751f',
+  border: isDark ? '#3d3d3d' : '#ff751f',
   shadow: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
 });
 

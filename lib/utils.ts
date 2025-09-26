@@ -42,8 +42,8 @@ export const getActivityColor = (type: string): string => {
     case 'loan_approved': return '#28a745';
     case 'loan_rejected': return '#dc3545';
     case 'payment': return '#17a2b8';
-    case 'profile_update': return '#6c757d';
-    default: return '#6c757d';
+    case 'profile_update': return '#ff751f';
+    default: return '#ff751f';
   }
 };
 
@@ -64,8 +64,8 @@ export const getLoanStatusColor = (status: string): string => {
     case 'approved': return '#28a745';
     case 'rejected': return '#dc3545';
     case 'active': return '#007bff';
-    case 'completed': return '#6c757d';
-    default: return '#6c757d';
+    case 'completed': return '#ff751f';
+    default: return '#ff751f';
   }
 };
 
@@ -83,7 +83,7 @@ export const getIdVerificationColor = (status?: string): string => {
     case 'verified': return '#28a745';
     case 'pending': return '#ff9800';
     case 'rejected': return '#dc3545';
-    default: return '#6c757d';
+    default: return '#ff751f';
   }
 };
 

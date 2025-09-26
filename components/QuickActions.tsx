@@ -39,7 +39,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         
         <Button
           title="Account Settings"
-          buttonStyle={[styles.actionButton, { backgroundColor: '#6c757d' }]}
+          buttonStyle={[styles.actionButton, { backgroundColor: '#ff751f' }]}
           titleStyle={styles.actionButtonText}
           onPress={onAccountSettings}
           icon={{ name: 'settings', type: 'material', color: 'white', size: 20 }}
@@ -73,10 +73,10 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   actionButtonText: {
     fontSize: 12,
