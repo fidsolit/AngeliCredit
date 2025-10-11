@@ -50,9 +50,10 @@ interface DashboardStats {
 
 export default function AdminDashboard({ session }: { session: any }) {
   const { isDark, colors } = useSimpleTheme();
-  const [activeTab, setActiveTab] = useState<"overview" | "loans" | "users">(
+  const [activeTab, setActiveTab] = useState<"overview" | "loans" | "users" | "profile">(
     "overview"
   );
+  const [adminProfile, setAdminProfile] = useState<any>(null);
   const [loanFilter, setLoanFilter] = useState<
     "all" | "pending" | "approved" | "active" | "completed"
   >("all");
@@ -74,13 +75,49 @@ export default function AdminDashboard({ session }: { session: any }) {
   });
   const [loans, setLoans] = useState<Loan[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  
+  // Pagination states
+  const [loansPage, setLoansPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const [hasMoreLoans, setHasMoreLoans] = useState(true);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [hasMoreActivities, setHasMoreActivities] = useState(true);
+  const [loadingMoreLoans, setLoadingMoreLoans] = useState(false);
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
+  const [loadingMoreActivities, setLoadingMoreActivities] = useState(false);
+  
+  // Pagination constants
+  const LOANS_PER_PAGE = 10;
+  const USERS_PER_PAGE = 15;
+  const ACTIVITIES_PER_PAGE = 8;
 
   useEffect(() => {
     if (session?.user) {
       checkAdminAccess();
       loadDashboardData();
+      loadAdminProfile();
     }
   }, [session]);
+
+  const loadAdminProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (error) {
+        console.error("Error loading admin profile:", error);
+        return;
+      }
+
+      setAdminProfile(data);
+    } catch (error) {
+      console.error("Error loading admin profile:", error);
+    }
+  };
 
   const checkAdminAccess = async () => {
     try {
@@ -150,7 +187,15 @@ export default function AdminDashboard({ session }: { session: any }) {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      await Promise.all([loadStats(), loadLoans(), loadUsers()]);
+      // Reset pagination states
+      setLoansPage(1);
+      setUsersPage(1);
+      setActivitiesPage(1);
+      setHasMoreLoans(true);
+      setHasMoreUsers(true);
+      setHasMoreActivities(true);
+      
+      await Promise.all([loadStats(), loadLoans(true), loadUsers(true)]);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       Alert.alert("Error", "Failed to load dashboard data.");
@@ -203,21 +248,36 @@ export default function AdminDashboard({ session }: { session: any }) {
     }
   };
 
-  const loadLoans = async () => {
+  const loadLoans = async (reset = false) => {
     try {
-      // First, get all loans
+      if (reset) {
+        setLoansPage(1);
+        setHasMoreLoans(true);
+        setLoadingMoreLoans(false);
+      }
+
+      const currentPage = reset ? 1 : loansPage;
+      const offset = (currentPage - 1) * LOANS_PER_PAGE;
+
+      // Get loans with pagination
       const { data: loansData, error: loansError } = await supabase
         .from("loans")
         .select("*")
         .order("application_date", { ascending: false })
-        .limit(20);
+        .range(offset, offset + LOANS_PER_PAGE - 1);
 
       if (loansError) throw loansError;
 
       if (!loansData || loansData.length === 0) {
-        setLoans([]);
+        if (reset) {
+          setLoans([]);
+        }
+        setHasMoreLoans(false);
         return;
       }
+
+      // Check if there are more loans
+      setHasMoreLoans(loansData.length === LOANS_PER_PAGE);
 
       // Get user IDs from loans
       const userIds = [...new Set(loansData.map((loan) => loan.user_id))];
@@ -236,7 +296,12 @@ export default function AdminDashboard({ session }: { session: any }) {
           user_email: "Unknown",
           user_name: "Unknown User",
         }));
-        setLoans(formattedLoans);
+        
+        if (reset) {
+          setLoans(formattedLoans);
+        } else {
+          setLoans(prev => [...prev, ...formattedLoans]);
+        }
         return;
       }
 
@@ -256,14 +321,30 @@ export default function AdminDashboard({ session }: { session: any }) {
         };
       });
 
-      setLoans(formattedLoans);
+      if (reset) {
+        setLoans(formattedLoans);
+      } else {
+        setLoans(prev => [...prev, ...formattedLoans]);
+      }
     } catch (error) {
       console.error("Error loading loans:", error);
-      setLoans([]);
+      if (reset) {
+        setLoans([]);
+      }
+      setHasMoreLoans(false);
     }
   };
 
-  const loadUsers = async () => {
+  const loadMoreLoans = async () => {
+    if (!hasMoreLoans || loadingMoreLoans) return;
+    
+    setLoadingMoreLoans(true);
+    setLoansPage(prev => prev + 1);
+    await loadLoans(false);
+    setLoadingMoreLoans(false);
+  };
+
+  const loadUsers = async (reset = false) => {
     try {
       // First check if we have admin access
       const { data: adminCheck, error: adminError } = await supabase
@@ -274,16 +355,28 @@ export default function AdminDashboard({ session }: { session: any }) {
 
       if (adminError || !adminCheck?.is_admin) {
         console.log("User does not have admin access or profile not found");
-        setUsers([]);
+        if (reset) {
+          setUsers([]);
+        }
+        setHasMoreUsers(false);
         return;
       }
 
-      // Load all users (admin should be able to see all)
+      if (reset) {
+        setUsersPage(1);
+        setHasMoreUsers(true);
+        setLoadingMoreUsers(false);
+      }
+
+      const currentPage = reset ? 1 : usersPage;
+      const offset = (currentPage - 1) * USERS_PER_PAGE;
+
+      // Load users with pagination
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(50); // Increased limit for admin view
+        .range(offset, offset + USERS_PER_PAGE - 1);
 
       if (error) {
         console.error("Error loading users:", error);
@@ -298,16 +391,44 @@ export default function AdminDashboard({ session }: { session: any }) {
             [{ text: "OK" }]
           );
         }
-        setUsers([]);
+        if (reset) {
+          setUsers([]);
+        }
+        setHasMoreUsers(false);
         return;
       }
 
-      setUsers(data || []);
+      if (!data || data.length === 0) {
+        setHasMoreUsers(false);
+        return;
+      }
+
+      // Check if there are more users
+      setHasMoreUsers(data.length === USERS_PER_PAGE);
+
+      if (reset) {
+        setUsers(data);
+      } else {
+        setUsers(prev => [...prev, ...data]);
+      }
+      
       console.log(`Loaded ${data?.length || 0} users for admin dashboard`);
     } catch (error) {
       console.error("Error loading users:", error);
-      setUsers([]);
+      if (reset) {
+        setUsers([]);
+      }
+      setHasMoreUsers(false);
     }
+  };
+
+  const loadMoreUsers = async () => {
+    if (!hasMoreUsers || loadingMoreUsers) return;
+    
+    setLoadingMoreUsers(true);
+    setUsersPage(prev => prev + 1);
+    await loadUsers(false);
+    setLoadingMoreUsers(false);
   };
 
   const handleLoanAction = async (
@@ -417,8 +538,10 @@ export default function AdminDashboard({ session }: { session: any }) {
         {
           text: "OK",
           onPress: async () => {
-            // Automatically refresh all dashboard data
-            await loadDashboardData();
+            // Refresh loans data while preserving pagination state
+            await loadLoans(true);
+            // Also refresh stats
+            await loadStats();
           },
         },
       ]);
@@ -492,8 +615,8 @@ export default function AdminDashboard({ session }: { session: any }) {
         {
           text: "OK",
           onPress: async () => {
-            // Automatically refresh all dashboard data
-            await loadDashboardData();
+            // Refresh users data while preserving pagination state
+            await loadUsers(true);
             if (selectedUser?.id === userId) {
               setSelectedUser({ ...selectedUser, credit_score: newScore });
             }
@@ -519,8 +642,8 @@ export default function AdminDashboard({ session }: { session: any }) {
         {
           text: "OK",
           onPress: async () => {
-            // Automatically refresh all dashboard data
-            await loadDashboardData();
+            // Refresh users data while preserving pagination state
+            await loadUsers(true);
             if (selectedUser?.id === userId) {
               setSelectedUser({ ...selectedUser, loan_limit: newLimit });
             }
@@ -535,7 +658,15 @@ export default function AdminDashboard({ session }: { session: any }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
+    // Reset pagination states
+    setLoansPage(1);
+    setUsersPage(1);
+    setActivitiesPage(1);
+    setHasMoreLoans(true);
+    setHasMoreUsers(true);
+    setHasMoreActivities(true);
+    
+    await Promise.all([loadStats(), loadLoans(true), loadUsers(true)]);
     setRefreshing(false);
   };
 
@@ -870,6 +1001,162 @@ export default function AdminDashboard({ session }: { session: any }) {
           </Card>
         </TouchableOpacity>
       ))}
+
+      {/* Load More Button */}
+      {hasMoreLoans && (
+        <View style={styles.loadMoreContainer}>
+          <TouchableOpacity
+            style={styles.loadMoreButton}
+            onPress={loadMoreLoans}
+            disabled={loadingMoreLoans}
+            activeOpacity={0.7}
+          >
+            {loadingMoreLoans ? (
+              <>
+                <Ionicons name="hourglass" size={16} color="#ffffff" />
+                <Text style={styles.loadMoreText}>Loading...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="add-circle" size={16} color="#ffffff" />
+                <Text style={styles.loadMoreText}>Load More Loans</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+
+  const renderProfile = () => (
+    <ScrollView showsVerticalScrollIndicator={false}>
+      {/* Profile Header */}
+      <View style={styles.profileHeaderContainer}>
+        <View style={styles.profileHeader}>
+          <Avatar
+            size={100}
+            rounded
+            source={{ uri: adminProfile?.avatar_url }}
+            icon={{ name: "person", type: "material" }}
+            containerStyle={styles.profileAvatar}
+          />
+          <View style={styles.profileHeaderInfo}>
+            <Text style={styles.profileName}>
+              {adminProfile?.full_name || "Admin User"}
+            </Text>
+            <Text style={styles.profileEmail}>{adminProfile?.email}</Text>
+            <View style={styles.adminBadge}>
+              <Ionicons name="shield-checkmark" size={16} color="#ffffff" />
+              <Text style={styles.adminBadgeText}>Administrator</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Profile Info Cards */}
+      <View style={styles.profileCardsContainer}>
+        <Card containerStyle={styles.profileInfoCard}>
+          <View style={styles.profileInfoRow}>
+            <Ionicons name="call" size={20} color="#007bff" />
+            <View style={styles.profileInfoContent}>
+              <Text style={styles.profileInfoLabel}>Phone</Text>
+              <Text style={styles.profileInfoValue}>
+                {adminProfile?.phone || "Not provided"}
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        <Card containerStyle={styles.profileInfoCard}>
+          <View style={styles.profileInfoRow}>
+            <Ionicons name="location" size={20} color="#28a745" />
+            <View style={styles.profileInfoContent}>
+              <Text style={styles.profileInfoLabel}>Location</Text>
+              <Text style={styles.profileInfoValue}>
+                {adminProfile?.city && adminProfile?.province
+                  ? `${adminProfile.city}, ${adminProfile.province}`
+                  : "Not provided"}
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        <Card containerStyle={styles.profileInfoCard}>
+          <View style={styles.profileInfoRow}>
+            <Ionicons name="calendar" size={20} color="#ff9800" />
+            <View style={styles.profileInfoContent}>
+              <Text style={styles.profileInfoLabel}>Member Since</Text>
+              <Text style={styles.profileInfoValue}>
+                {adminProfile?.created_at
+                  ? formatDate(adminProfile.created_at)
+                  : "Unknown"}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </View>
+
+      {/* Admin Actions */}
+      <View style={styles.profileActionsContainer}>
+        <Text style={styles.profileSectionTitle}>Admin Actions</Text>
+        
+        <TouchableOpacity
+          style={styles.profileActionButton}
+          onPress={() => Alert.alert("Coming Soon", "Edit profile feature coming soon!")}
+          activeOpacity={0.7}
+        >
+          <View style={styles.profileActionContent}>
+            <Ionicons name="person-circle-outline" size={24} color="#007bff" />
+            <View style={styles.profileActionTextContainer}>
+              <Text style={styles.profileActionTitle}>Edit Profile</Text>
+              <Text style={styles.profileActionSubtitle}>Update your personal information</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#6c757d" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profileActionButton}
+          onPress={() => Alert.alert("Coming Soon", "Change password feature coming soon!")}
+          activeOpacity={0.7}
+        >
+          <View style={styles.profileActionContent}>
+            <Ionicons name="lock-closed-outline" size={24} color="#28a745" />
+            <View style={styles.profileActionTextContainer}>
+              <Text style={styles.profileActionTitle}>Change Password</Text>
+              <Text style={styles.profileActionSubtitle}>Update your account password</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#6c757d" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profileActionButton}
+          onPress={() => Alert.alert("Coming Soon", "Security settings coming soon!")}
+          activeOpacity={0.7}
+        >
+          <View style={styles.profileActionContent}>
+            <Ionicons name="shield-checkmark-outline" size={24} color="#ff9800" />
+            <View style={styles.profileActionTextContainer}>
+              <Text style={styles.profileActionTitle}>Security Settings</Text>
+              <Text style={styles.profileActionSubtitle}>Manage security preferences</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#6c757d" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Sign Out Button */}
+      <View style={styles.profileSignOutContainer}>
+        <TouchableOpacity
+          style={styles.profileSignOutButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={24} color="#ffffff" />
+          <Text style={styles.profileSignOutText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 
@@ -945,6 +1232,30 @@ export default function AdminDashboard({ session }: { session: any }) {
           </Card>
         </TouchableOpacity>
       ))}
+
+      {/* Load More Button */}
+      {hasMoreUsers && (
+        <View style={styles.loadMoreContainer}>
+          <TouchableOpacity
+            style={styles.loadMoreButton}
+            onPress={loadMoreUsers}
+            disabled={loadingMoreUsers}
+            activeOpacity={0.7}
+          >
+            {loadingMoreUsers ? (
+              <>
+                <Ionicons name="hourglass" size={16} color="#ffffff" />
+                <Text style={styles.loadMoreText}>Loading...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="add-circle" size={16} color="#ffffff" />
+                <Text style={styles.loadMoreText}>Load More Users</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 
@@ -1016,6 +1327,20 @@ export default function AdminDashboard({ session }: { session: any }) {
             Users
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "profile" && styles.activeTab]}
+          onPress={() => setActiveTab("profile")}
+          activeOpacity={1}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "profile" && styles.activeTabText,
+            ]}
+          >
+            Profile
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -1028,6 +1353,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         {activeTab === "overview" && renderOverview()}
         {activeTab === "loans" && renderLoans()}
         {activeTab === "users" && renderUsers()}
+        {activeTab === "profile" && renderProfile()}
       </ScrollView>
 
       {/* Loan Details Modal */}
@@ -1425,19 +1751,6 @@ export default function AdminDashboard({ session }: { session: any }) {
         </View>
       )}
 
-      {/* Bottom Logout Button */}
-      <View style={styles.bottomLogoutContainer}>
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={styles.bottomLogoutButton}
-          activeOpacity={1}
-        >
-          <View style={styles.bottomLogoutContent}>
-            <Ionicons name="log-out-outline" size={24} color="#ffffff" />
-            <Text style={styles.bottomLogoutText}>Sign Out</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -1511,8 +1824,8 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 4,
+    paddingHorizontal: 8,
+    marginHorizontal: 2,
     borderRadius: 12,
     alignItems: "center",
   },
@@ -2040,5 +2353,191 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Load More Styles
+  loadMoreContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  loadMoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007bff",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  loadMoreText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // Profile Styles
+  profileHeaderContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  profileAvatar: {
+    backgroundColor: "#e9ecef",
+    borderWidth: 3,
+    borderColor: "#ff751f",
+  },
+  profileHeaderInfo: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 8,
+  },
+  adminBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ff751f",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+    gap: 6,
+  },
+  adminBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  profileCardsContainer: {
+    paddingHorizontal: 20,
+    marginTop: 15,
+    gap: 12,
+  },
+  profileInfoCard: {
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: "#ffffff",
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  profileInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+  },
+  profileInfoContent: {
+    flex: 1,
+  },
+  profileInfoLabel: {
+    fontSize: 12,
+    color: "#6c757d",
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  profileInfoValue: {
+    fontSize: 16,
+    color: "#212529",
+    fontWeight: "600",
+  },
+  profileActionsContainer: {
+    paddingHorizontal: 20,
+    marginTop: 30,
+    marginBottom: 20,
+  },
+  profileSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 15,
+  },
+  profileActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  profileActionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 15,
+  },
+  profileActionTextContainer: {
+    flex: 1,
+  },
+  profileActionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  profileActionSubtitle: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  profileSignOutContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    marginBottom: 30,
+  },
+  profileSignOutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#dc3545",
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  profileSignOutText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ffffff",
   },
 });
