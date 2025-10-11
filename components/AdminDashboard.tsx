@@ -1442,8 +1442,6 @@ export default function AdminDashboard({ session }: { session: any }) {
   );
 }
 
-import { StyleSheet } from "react-native";
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1457,13 +1455,17 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingTop: 20,
+    paddingBottom: 20,
     backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   headerTitle: {
     color: "#212529",
@@ -1477,7 +1479,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: "#f8f9fa",
-    marginLeft: 10,
   },
   logoutButton: {
     backgroundColor: "#ff751f",
@@ -1501,13 +1502,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     paddingHorizontal: 20,
     paddingVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginHorizontal: 4,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
   },
   activeTab: {
@@ -1520,28 +1526,43 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#ffffff",
+    fontWeight: "700",
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingBottom: 10,
   },
   // Stats Styles
   statsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingHorizontal: 20,
     marginTop: 20,
+    marginBottom: 20,
+    gap: 15,
   },
   statCard: {
     flexBasis: "48%",
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     backgroundColor: "#ffffff",
-    shadowColor: "#ff751f",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    minHeight: 140,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  statItem: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   statLabel: {
     fontSize: 12,
@@ -1552,33 +1573,42 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
     color: "#212529",
     textAlign: "center",
+    marginBottom: 2,
   },
-  // Section Title
+  // Recent Activity
+  recentActivityContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
   sectionTitle: {
     color: "#212529",
     fontWeight: "600",
     marginBottom: 15,
-    marginTop: 20,
   },
-  // Activity Card
   activityCard: {
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
+    padding: 20,
+    borderWidth: 0,
     backgroundColor: "#ffffff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 0,
+    marginBottom: 0,
   },
   activityItem: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 10,
   },
   activityContent: {
     flex: 1,
@@ -1586,7 +1616,7 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 16,
     color: "#212529",
-    fontWeight: "600",
+    fontWeight: "500",
     marginBottom: 2,
   },
   activitySubtitle: {
@@ -1597,27 +1627,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6c757d",
   },
+  activityRight: {
+    alignItems: "flex-end",
+  },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 12,
     color: "#ffffff",
     fontWeight: "600",
   },
+  // Filter Styles
+  filterContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#f8f9fa",
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 10,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    borderWidth: 0,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  activeFilterButton: {
+    backgroundColor: "#ff751f",
+    borderWidth: 0,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontWeight: "500",
+  },
+  activeFilterButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+  },
   // Loan Card
+  loanCardTouchable: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
   loanCard: {
     borderRadius: 12,
     padding: 16,
-    marginBottom: 15,
     backgroundColor: "#ffffff",
+    borderWidth: 0,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 0,
+    marginBottom: 0,
   },
   loanHeader: {
     flexDirection: "row",
@@ -1625,32 +1696,152 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
+  loanInfo: {
+    flex: 1,
+  },
   loanTitle: {
     fontSize: 16,
     color: "#212529",
     fontWeight: "600",
+    marginBottom: 4,
   },
   loanAmount: {
     fontSize: 18,
     color: "#007bff",
     fontWeight: "700",
+    marginBottom: 4,
+  },
+  loanDetails: {
+    fontSize: 14,
+    color: "#6c757d",
+  },
+  loanRightSection: {
+    alignItems: "flex-end",
   },
   loanDate: {
     fontSize: 12,
     color: "#6c757d",
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  actionButtons: {
+  quickActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 10,
+    flexWrap: "wrap",
   },
-  actionButton: {
-    flex: 1,
-    borderRadius: 8,
+  quickActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    minWidth: 80,
+    justifyContent: "center",
+  },
+  quickActionText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  // Search Styles
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#f8f9fa",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#212529",
+  },
+  // User Card
+  userCardTouchable: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  userCard: {
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: "#ffffff",
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  userHeader: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  // Modal
+  userAvatar: {
+    marginRight: 15,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    color: "#212529",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 2,
+  },
+  userDate: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  userRightSection: {
+    alignItems: "flex-end",
+  },
+  userStats: {
+    alignItems: "flex-end",
+    marginBottom: 8,
+  },
+  statBadge: {
+    backgroundColor: "#f8f9fa",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  statBadgeText: {
+    fontSize: 12,
+    color: "#6c757d",
+    fontWeight: "500",
+  },
+  loanLimit: {
+    fontSize: 12,
+    color: "#28a745",
+    fontWeight: "600",
+  },
+  // Modal Styles
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -1661,21 +1852,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   modalContainer: {
     backgroundColor: "#ffffff",
     borderRadius: 12,
     width: "100%",
-    maxHeight: "80%",
+    maxHeight: "85%",
     overflow: "hidden",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 0,
+    backgroundColor: "#ffffff",
   },
   modalTitle: {
     fontSize: 18,
@@ -1685,12 +1884,145 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
   },
+  detailSection: {
+    marginBottom: 25,
+  },
+  detailSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 15,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontWeight: "500",
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#212529",
+    fontWeight: "600",
+  },
+  editableValue: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editButton: {
+    padding: 6,
+  },
+  modalActions: {
+    gap: 10,
+  },
+  modalActionButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+  },
+  // User Profile Modal
+  userProfileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  modalAvatar: {
+    marginRight: 15,
+  },
+  userProfileInfo: {
+    flex: 1,
+  },
+  userProfileName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  userProfileEmail: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 2,
+  },
+  userProfileDate: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  // Loan History
+  loanHistoryItem: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  loanHistoryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  loanHistoryAmount: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#007bff",
+  },
+  loanHistoryDetails: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 4,
+  },
+  loanHistoryDate: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  noLoansText: {
+    fontSize: 14,
+    color: "#6c757d",
+    fontStyle: "italic",
+    textAlign: "center",
+    padding: 20,
+  },
+  // User Statistics
+  userStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  userStatCard: {
+    flexBasis: "47%",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+    minHeight: 80,
+    justifyContent: "center",
+  },
+  userStatValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  userStatLabel: {
+    fontSize: 12,
+    color: "#6c757d",
+    textAlign: "center",
+  },
+  // Bottom Logout
   bottomLogoutContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: "#ffffff",
-    borderTopWidth: 1,
-    borderTopColor: "#e9ecef",
+    borderTopWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   bottomLogoutButton: {
     backgroundColor: "#ff751f",
@@ -1699,11 +2031,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  bottomLogoutContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   bottomLogoutText: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
 });
-
-export default styles;
