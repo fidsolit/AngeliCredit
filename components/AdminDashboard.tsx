@@ -8,7 +8,7 @@ import {
   RefreshControl,
   TextInput,
 } from "react-native";
-import { Text, Card, Button, Avatar, Divider } from "@rneui/themed";
+import { Text, Card, Button, Avatar, Divider, Input, CheckBox } from "@rneui/themed";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -54,6 +54,28 @@ export default function AdminDashboard({ session }: { session: any }) {
     "overview"
   );
   const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
+  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
+  const [securitySettingsModalVisible, setSecuritySettingsModalVisible] = useState(false);
+  const [editProfileForm, setEditProfileForm] = useState({
+    full_name: "",
+    phone: "",
+    city: "",
+    province: "",
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorAuth: false,
+    emailNotifications: true,
+    loginAlerts: true,
+    sessionTimeout: true,
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [loanFilter, setLoanFilter] = useState<
     "all" | "pending" | "approved" | "active" | "completed"
   >("all");
@@ -114,8 +136,155 @@ export default function AdminDashboard({ session }: { session: any }) {
       }
 
       setAdminProfile(data);
+      
+      // Initialize forms with current data
+      setEditProfileForm({
+        full_name: data?.full_name || "",
+        phone: data?.phone || "",
+        city: data?.city || "",
+        province: data?.province || "",
+      });
+      
+      // Load security settings (you can store these in profile or separate table)
+      setSecuritySettings({
+        twoFactorAuth: data?.two_factor_auth || false,
+        emailNotifications: data?.email_notifications !== false,
+        loginAlerts: data?.login_alerts !== false,
+        sessionTimeout: data?.session_timeout !== false,
+      });
     } catch (error) {
       console.error("Error loading admin profile:", error);
+    }
+  };
+
+  const openEditProfileModal = () => {
+    setEditProfileForm({
+      full_name: adminProfile?.full_name || "",
+      phone: adminProfile?.phone || "",
+      city: adminProfile?.city || "",
+      province: adminProfile?.province || "",
+    });
+    setEditProfileModalVisible(true);
+  };
+
+  const closeEditProfileModal = () => {
+    setEditProfileModalVisible(false);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      if (!editProfileForm.full_name.trim()) {
+        Alert.alert("Error", "Full name is required");
+        return;
+      }
+
+      setSavingProfile(true);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editProfileForm.full_name,
+          phone: editProfileForm.phone,
+          city: editProfileForm.city,
+          province: editProfileForm.province,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.user.id);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Profile updated successfully!");
+      await loadAdminProfile();
+      closeEditProfileModal();
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const openChangePasswordModal = () => {
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setChangePasswordModalVisible(true);
+  };
+
+  const closeChangePasswordModal = () => {
+    setChangePasswordModalVisible(false);
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+        Alert.alert("Error", "Please fill in all password fields");
+        return;
+      }
+
+      if (passwordForm.newPassword.length < 6) {
+        Alert.alert("Error", "New password must be at least 6 characters");
+        return;
+      }
+
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        Alert.alert("Error", "New passwords do not match");
+        return;
+      }
+
+      setChangingPassword(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword,
+      });
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Password changed successfully!");
+      closeChangePasswordModal();
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      Alert.alert("Error", error.message || "Failed to change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const openSecuritySettingsModal = () => {
+    setSecuritySettingsModalVisible(true);
+  };
+
+  const closeSecuritySettingsModal = () => {
+    setSecuritySettingsModalVisible(false);
+  };
+
+  const handleSaveSecuritySettings = async () => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          two_factor_auth: securitySettings.twoFactorAuth,
+          email_notifications: securitySettings.emailNotifications,
+          login_alerts: securitySettings.loginAlerts,
+          session_timeout: securitySettings.sessionTimeout,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.user.id);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Security settings updated successfully!");
+      closeSecuritySettingsModal();
+    } catch (error) {
+      console.error("Error saving security settings:", error);
+      Alert.alert("Error", "Failed to update security settings");
     }
   };
 
@@ -803,8 +972,8 @@ export default function AdminDashboard({ session }: { session: any }) {
         <Text h4 style={styles.sectionTitle}>
           Recent Loan Applications
         </Text>
-        {loans.slice(0, 5).map((loan) => (
-          <Card key={loan.id} containerStyle={styles.activityCard}>
+        {loans.slice(0, 5).map((loan, index) => (
+          <Card key={loan.id} containerStyle={[styles.activityCard, { marginBottom: 12 }]}>
             <View style={styles.activityItem}>
               <View style={styles.activityContent}>
                 <Text style={styles.activityTitle}>
@@ -1102,7 +1271,7 @@ export default function AdminDashboard({ session }: { session: any }) {
         
         <TouchableOpacity
           style={styles.profileActionButton}
-          onPress={() => Alert.alert("Coming Soon", "Edit profile feature coming soon!")}
+          onPress={openEditProfileModal}
           activeOpacity={0.7}
         >
           <View style={styles.profileActionContent}>
@@ -1117,7 +1286,7 @@ export default function AdminDashboard({ session }: { session: any }) {
 
         <TouchableOpacity
           style={styles.profileActionButton}
-          onPress={() => Alert.alert("Coming Soon", "Change password feature coming soon!")}
+          onPress={openChangePasswordModal}
           activeOpacity={0.7}
         >
           <View style={styles.profileActionContent}>
@@ -1132,7 +1301,7 @@ export default function AdminDashboard({ session }: { session: any }) {
 
         <TouchableOpacity
           style={styles.profileActionButton}
-          onPress={() => Alert.alert("Coming Soon", "Security settings coming soon!")}
+          onPress={openSecuritySettingsModal}
           activeOpacity={0.7}
         >
           <View style={styles.profileActionContent}>
@@ -1745,6 +1914,266 @@ export default function AdminDashboard({ session }: { session: any }) {
                     <Text style={styles.userStatLabel}>Completed</Text>
                   </View>
                 </View>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* Edit Profile Modal */}
+      {editProfileModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={closeEditProfileModal} activeOpacity={1}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Input
+                label="Full Name"
+                value={editProfileForm.full_name}
+                onChangeText={(text) =>
+                  setEditProfileForm({ ...editProfileForm, full_name: text })
+                }
+                placeholder="Enter your full name"
+                leftIcon={<Ionicons name="person" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <Input
+                label="Phone"
+                value={editProfileForm.phone}
+                onChangeText={(text) =>
+                  setEditProfileForm({ ...editProfileForm, phone: text })
+                }
+                placeholder="Enter your phone number"
+                keyboardType="phone-pad"
+                leftIcon={<Ionicons name="call" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <Input
+                label="City"
+                value={editProfileForm.city}
+                onChangeText={(text) =>
+                  setEditProfileForm({ ...editProfileForm, city: text })
+                }
+                placeholder="Enter your city"
+                leftIcon={<Ionicons name="location" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <Input
+                label="Province"
+                value={editProfileForm.province}
+                onChangeText={(text) =>
+                  setEditProfileForm({ ...editProfileForm, province: text })
+                }
+                placeholder="Enter your province"
+                leftIcon={<Ionicons name="map" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <View style={styles.modalActions}>
+                <Button
+                  title="Cancel"
+                  onPress={closeEditProfileModal}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#6c757d" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
+                <Button
+                  title={savingProfile ? "Saving..." : "Save Changes"}
+                  onPress={handleSaveProfile}
+                  disabled={savingProfile}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#007bff" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* Change Password Modal */}
+      {changePasswordModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <TouchableOpacity onPress={closeChangePasswordModal} activeOpacity={1}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.passwordHelperText}>
+                Enter your new password. It must be at least 6 characters long.
+              </Text>
+
+              <Input
+                label="New Password"
+                value={passwordForm.newPassword}
+                onChangeText={(text) =>
+                  setPasswordForm({ ...passwordForm, newPassword: text })
+                }
+                placeholder="Enter new password"
+                secureTextEntry
+                leftIcon={<Ionicons name="lock-closed" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <Input
+                label="Confirm New Password"
+                value={passwordForm.confirmPassword}
+                onChangeText={(text) =>
+                  setPasswordForm({ ...passwordForm, confirmPassword: text })
+                }
+                placeholder="Confirm new password"
+                secureTextEntry
+                leftIcon={<Ionicons name="lock-closed" size={20} color="#6c757d" />}
+                containerStyle={{ paddingHorizontal: 0 }}
+              />
+
+              <View style={styles.modalActions}>
+                <Button
+                  title="Cancel"
+                  onPress={closeChangePasswordModal}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#6c757d" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
+                <Button
+                  title={changingPassword ? "Changing..." : "Change Password"}
+                  onPress={handleChangePassword}
+                  disabled={changingPassword}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#28a745" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* Security Settings Modal */}
+      {securitySettingsModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Security Settings</Text>
+              <TouchableOpacity onPress={closeSecuritySettingsModal} activeOpacity={1}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.securitySectionTitle}>Account Security</Text>
+
+              <CheckBox
+                title="Two-Factor Authentication"
+                checked={securitySettings.twoFactorAuth}
+                onPress={() =>
+                  setSecuritySettings({
+                    ...securitySettings,
+                    twoFactorAuth: !securitySettings.twoFactorAuth,
+                  })
+                }
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+              />
+              <Text style={styles.checkboxDescription}>
+                Add an extra layer of security to your account
+              </Text>
+
+              <Divider style={styles.securityDivider} />
+
+              <Text style={styles.securitySectionTitle}>Notifications</Text>
+
+              <CheckBox
+                title="Email Notifications"
+                checked={securitySettings.emailNotifications}
+                onPress={() =>
+                  setSecuritySettings({
+                    ...securitySettings,
+                    emailNotifications: !securitySettings.emailNotifications,
+                  })
+                }
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+              />
+              <Text style={styles.checkboxDescription}>
+                Receive email updates about account activity
+              </Text>
+
+              <CheckBox
+                title="Login Alerts"
+                checked={securitySettings.loginAlerts}
+                onPress={() =>
+                  setSecuritySettings({
+                    ...securitySettings,
+                    loginAlerts: !securitySettings.loginAlerts,
+                  })
+                }
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+              />
+              <Text style={styles.checkboxDescription}>
+                Get notified when someone logs into your account
+              </Text>
+
+              <Divider style={styles.securityDivider} />
+
+              <Text style={styles.securitySectionTitle}>Session Management</Text>
+
+              <CheckBox
+                title="Auto Session Timeout"
+                checked={securitySettings.sessionTimeout}
+                onPress={() =>
+                  setSecuritySettings({
+                    ...securitySettings,
+                    sessionTimeout: !securitySettings.sessionTimeout,
+                  })
+                }
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+              />
+              <Text style={styles.checkboxDescription}>
+                Automatically log out after 30 minutes of inactivity
+              </Text>
+
+              <View style={styles.modalActions}>
+                <Button
+                  title="Cancel"
+                  onPress={closeSecuritySettingsModal}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#6c757d" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
+                <Button
+                  title="Save Settings"
+                  onPress={handleSaveSecuritySettings}
+                  buttonStyle={[
+                    styles.modalActionButton,
+                    { backgroundColor: "#ff9800" },
+                  ]}
+                  containerStyle={{ flex: 1 }}
+                />
               </View>
             </ScrollView>
           </View>
@@ -2539,5 +2968,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#ffffff",
+  },
+  // Password Modal Styles
+  passwordHelperText: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  // Security Settings Modal Styles
+  securitySectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212529",
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  checkboxContainer: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    padding: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  checkboxText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#212529",
+  },
+  checkboxDescription: {
+    fontSize: 13,
+    color: "#6c757d",
+    marginLeft: 40,
+    marginBottom: 10,
+  },
+  securityDivider: {
+    marginVertical: 20,
+    backgroundColor: "#e9ecef",
   },
 });
